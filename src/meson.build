@@ -1,4 +1,4 @@
 libaction = library('action',
-                    sources : ['estimator.cpp', 'libaction.cpp'],
-                    include_directories : libaction_include,
-                    dependencies : deptensorflow_lite)
+                    sources : ['estimator.cpp'],
+                    include_directories : include_directories('../include/libaction'),
+                    dependencies : deptensorflow)

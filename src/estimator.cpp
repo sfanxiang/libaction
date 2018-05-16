@@ -9,7 +9,12 @@
 // temp:
 #include <iostream>
 
-Estimator::Estimator(const char *graph_path, int num_threads)
+namespace libaction
+{
+
+Estimator::Estimator(
+	const char *graph_path, int num_threads,
+	int height, int width, int channels)
 : model(tflite::FlatBufferModel::BuildFromFile(graph_path))
 {
 	if (!model)
@@ -20,6 +25,31 @@ Estimator::Estimator(const char *graph_path, int num_threads)
 	if (!interpreter)
 		throw std::runtime_error("failed to build interpreter");
 
-	if (num_threads > 1)
+	if (num_threads > 0)
 		interpreter->SetNumThreads(num_threads);
+
+	if (interpreter->ResizeInputTensor(0, {1, height, width, channels})
+		!= kTfLiteOk)
+		throw std::runtime_error("ResizeInputTensor failed");
+
+	if (interpreter->AllocateTensors() != kTfLiteOk)
+		throw std::runtime_error("AllocateTensors failed");
+}
+
+float *Estimator::get_input()
+{
+	return interpreter->typed_input_tensor<float>(0);
+}
+
+void Estimator::estimate()
+{
+	if (interpreter->Invoke() != kTfLiteOk)
+		throw std::runtime_error("Invoke failed");
+}
+
+float *Estimator::get_output()
+{
+	return interpreter->typed_output_tensor<float>(0);
+}
+
 }

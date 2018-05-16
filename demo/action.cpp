@@ -1,4 +1,4 @@
-#include <libaction.h>
+#include <libaction/estimator.hpp>
 
 #include <cstdlib>
 #include <iostream>
@@ -6,12 +6,26 @@
 
 int main()
 {
-	std::unique_ptr<LibactionEstimator, decltype(&libaction_delete_estimator)>
-		estimator(libaction_new_estimator(
-			"graph_tflite.tflite", 1), &libaction_delete_estimator);
+	const int height = 368, width = 432, channels = 3;
 
-	if (!estimator) {
-		std::cerr << "failed to create estimator" << std::endl;
+	try {
+		libaction::Estimator estimator("graph_tflite.tflite", 1,
+			height, width, channels);
+
+		std::cerr << "...." << std::endl;
+
+		estimator.get_input();
+
+		std::cerr << "...." << std::endl;
+
+		estimator.estimate();
+
+		std::cerr << "...." << std::endl;
+
+		estimator.get_output();
+
+	} catch (std::exception &e) {
+		std::cerr << "Error: " << e.what() << std::endl;
 		return EXIT_FAILURE;
 	}
 

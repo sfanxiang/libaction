@@ -1,5 +1,5 @@
 executable('action',
            sources : ['action.cpp'],
-           include_directories : libaction_include,
+           include_directories : include_directories('../include'),
            link_with : libaction,
-           dependencies : deptensorflow_lite)
+           dependencies : deptensorflow)
