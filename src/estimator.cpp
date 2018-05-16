@@ -36,9 +36,9 @@ Estimator::Estimator(
 		throw std::runtime_error("AllocateTensors failed");
 }
 
-float *Estimator::get_input()
+Estimator::value_type *Estimator::get_input()
 {
-	return interpreter->typed_input_tensor<float>(0);
+	return interpreter->typed_input_tensor<value_type>(0);
 }
 
 void Estimator::estimate()
@@ -47,9 +47,9 @@ void Estimator::estimate()
 		throw std::runtime_error("Invoke failed");
 }
 
-float *Estimator::get_output()
+Estimator::value_type *Estimator::get_output()
 {
-	return interpreter->typed_output_tensor<float>(0);
+	return interpreter->typed_output_tensor<value_type>(0);
 }
 
 }

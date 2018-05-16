@@ -1,26 +1,28 @@
 #include <libaction/estimator.hpp>
 
+#include <chrono>
 #include <cstdlib>
 #include <iostream>
 #include <memory>
 
 int main()
 {
-	const int height = 368, width = 432, channels = 3;
+	const int height = 256, width = 144, channels = 3;
 
 	try {
-		libaction::Estimator estimator("graph_tflite.tflite", 1,
+		libaction::Estimator estimator("graph_tflite.tflite", 0,
 			height, width, channels);
-
-		std::cerr << "...." << std::endl;
 
 		estimator.get_input();
 
-		std::cerr << "...." << std::endl;
+		auto time = std::chrono::steady_clock::now();
 
-		estimator.estimate();
-
-		std::cerr << "...." << std::endl;
+		for (int i = 0; i < 16; i++) {
+			estimator.estimate();
+			auto now = std::chrono::steady_clock::now();
+			std::cerr << std::chrono::duration_cast<std::chrono::microseconds>(now - time).count() << std::endl;
+			time = now;
+		}
 
 		estimator.get_output();
 

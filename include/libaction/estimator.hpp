@@ -12,12 +12,15 @@ namespace libaction
 class Estimator
 {
 public:
+	typedef float value_type;
+
+public:
 	Estimator(const char *graph_path, int num_threads,
 		int height, int width, int channels);
 
-	float *get_input();
+	value_type *get_input();
 	void estimate();
-	float *get_output();
+	value_type *get_output();
 
 	inline constexpr static size_t index(
 		size_t height, size_t width, unsigned channels,
