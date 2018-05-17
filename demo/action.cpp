@@ -1,3 +1,4 @@
+#include <boost/multi_array.hpp>
 #include <libaction/estimator.hpp>
 #include <libaction/image.hpp>
 #include <chrono>
@@ -7,19 +8,19 @@
 #include <memory>
 #include <stdexcept>
 
-std::unique_ptr<uint8_t[]> read_image(const std::string &file,
-	size_t height, size_t width, size_t channels)
+std::unique_ptr<boost::multi_array<uint8_t, 3>> read_image(
+	const std::string &file, size_t height, size_t width, size_t channels)
 {
 	std::ifstream f(file, f.binary);
 	if (!f.is_open())
 		throw std::runtime_error("failed to open image file");
 
-	const auto size = libaction::image::size(height, width, channels);
+	auto image = std::unique_ptr<boost::multi_array<uint8_t, 3>>(
+		new boost::multi_array<uint8_t, 3>(
+			boost::extents[height][width][channels]));
+	f.read(reinterpret_cast<char*>(image->data()), image->num_elements());
 
-	auto image = std::unique_ptr<uint8_t[]>(new uint8_t[size]);
-	f.read(reinterpret_cast<char*>(image.get()), size);
-
-	if (static_cast<size_t>(f.gcount()) < size)
+	if (static_cast<size_t>(f.gcount()) < image->num_elements())
 		throw std::runtime_error("image file too small");
 
 	return image;
@@ -35,7 +36,7 @@ int main()
 
 		const size_t im[] = {232, 217, 3};
 		auto image = read_image("p1.raw", im[0], im[1], im[2]);
-		estimator.estimate<uint8_t>(image.get(), im[0], im[1], im[2]);
+		estimator.estimate(*image);
 
 	} catch (std::exception &e) {
 		std::cerr << "Error: " << e.what() << std::endl;

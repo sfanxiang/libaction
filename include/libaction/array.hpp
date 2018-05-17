@@ -12,174 +12,125 @@ namespace libaction
 namespace array
 {
 
-inline size_t size(size_t dims, const size_t *shape)
+template<typename Input>
+std::unique_ptr<boost::multi_array<typename Input::element, 2>>
+suppress_threshold(const Input &array, typename Input::element threshold)
 {
-	if (dims == 0)
-		return 0;
+	if (array.num_dimensions() != 2)
+		throw std::runtime_error("wrong number of dimensions");
 
-	size_t res = 1;
-	for (size_t i = 0; i < dims; i++) {
-		res *= shape[i];
+	auto res = std::unique_ptr<boost::multi_array<typename Input::element, 2>>(
+		new boost::multi_array<typename Input::element, 2>(
+			boost::extents[array.shape()[0]][array.shape()[1]]));
+	for (size_t i = 0; i < array.shape()[0]; i++) {
+		for (size_t j = 0; j < array.shape()[1]; j++) {
+			if (array[i][j] >= threshold)
+				(*res)[i][j] = array[i][j];
+			else
+				(*res)[i][j] = static_cast<typename Input::element>(0);
+		}
 	}
+
 	return res;
 }
 
-inline size_t size(size_t dims, const std::vector<size_t> &shape)
+template<typename Input>
+std::unique_ptr<boost::multi_array<typename Input::element, 2>> max_filter(
+	const Input &array, size_t window_x, size_t window_y)
 {
-	if (shape.size() < dims)
-		throw std::runtime_error("shape.size() < dims");
-	return size(dims, shape.data());
-}
-
-inline size_t index(size_t dims, const size_t *shape, const size_t *indices)
-{
-	size_t res = 0;
-	for (size_t i = 0; i < dims; i++) {
-		res *= shape[i];
-		res += indices[i];
-	}
-	return res;
-}
-
-inline size_t index(size_t dims, const std::vector<size_t> &shape,
-	const size_t *indices)
-{
-	if (shape.size() < dims)
-		throw std::runtime_error("shape.size() < dims");
-	return index(dims, shape.data(), indices);
-}
-
-inline size_t index(size_t dims, const size_t *shape,
-	const std::vector<size_t> &indices)
-{
-	if (indices.size() < dims)
-		throw std::runtime_error("indices.size() < dims");
-	return index(dims, shape, indices.data());
-}
-
-inline size_t index(size_t dims, const std::vector<size_t> &shape,
-	const std::vector<size_t> &indices)
-{
-	if (shape.size() < dims)
-		throw std::runtime_error("shape.size() < dims");
-	if (indices.size() < dims)
-		throw std::runtime_error("indices.size() < dims");
-	return index(dims, shape.data(), indices.data());
-}
-
-template<typename T>
-std::unique_ptr<T[]> max_filter(const T *array, size_t x, size_t y,
-	size_t window_x, size_t window_y)
-{
-	if (x == 0 || y == 0)
-		throw std::runtime_error("invalid size");
-	if (window_x == 0 || window_y == 0 || window_x > x || window_y > y)
+	if (array.num_dimensions() != 2)
+		throw std::runtime_error("wrong number of dimensions");
+	if (array.shape()[0] == 0 || array.shape()[1] == 0)
+		throw std::runtime_error("invalid shape");
+	if (window_x == 0 || window_y == 0 ||
+			window_x > array.shape()[0] || window_y > array.shape()[1])
 		throw std::runtime_error("invalid window size");
 
-	auto temp = std::unique_ptr<T[]>(new T[x * y]);
+	auto x = array.shape()[0];
+	auto y = array.shape()[1];
+
+	boost::multi_array<typename Input::element, 2> temp(boost::extents[x][y]);
 
 	for (size_t i = 0; i < x; i++) {
-		std::deque<T> dq;
+		std::deque<typename Input::element> dq;
 		for (size_t j = 0; j < y; j++) {
-			auto ind = index(2, {x, y}, {i, j});
-
-			while (!dq.empty() && dq.back() < array[ind]) {
+			while (!dq.empty() && dq.back() < array[i][j]) {
 				dq.pop_back();
 			}
 
 			if (j >= window_y && !dq.empty() &&
-					dq.front() == array[ind - window_y]) {
+					dq.front() == array[i][j - window_y]) {
 				dq.pop_front();
 			}
 
-			dq.push_back(array[ind]);
+			dq.push_back(array[i][j]);
 			if (j >= (window_y - 1) / 2)
-				temp[ind - (window_y - 1) / 2] = dq.front();
+				temp[i][j - (window_y - 1) / 2] = dq.front();
 		}
 		for (size_t j = y; j < y + (window_y - 1) / 2; j++) {
-			auto ind = index(2, {x, y}, {i, j});
-
-			if (!dq.empty() && dq.front() == array[ind - window_y]) {
+			if (!dq.empty() && dq.front() == array[i][j - window_y]) {
 				dq.pop_front();
 			}
 
 			if (dq.empty())
 				throw std::runtime_error("queue is empty");
 
-			temp[ind - (window_y - 1) / 2] = dq.front();
+			temp[i][j - (window_y - 1) / 2] = dq.front();
 		}
 	}
 
-	auto res = std::unique_ptr<T[]>(new T[x * y]);
+	auto res = std::unique_ptr<boost::multi_array<typename Input::element, 2>>(
+		new boost::multi_array<typename Input::element, 2>(
+			boost::extents[x][y]));
 
 	for (size_t j = 0; j < y; j++) {
-		std::deque<T> dq;
+		std::deque<typename Input::element> dq;
 		for (size_t i = 0; i < x; i++) {
-			auto ind = index(2, {x, y}, {i, j});
-
-			while (!dq.empty() && dq.back() < temp[ind]) {
+			while (!dq.empty() && dq.back() < temp[i][j]) {
 				dq.pop_back();
 			}
 
 			if (i >= window_x && !dq.empty() &&
-					dq.front() == temp[ind - window_x * y]) {
+					dq.front() == temp[i - window_x][j]) {
 				dq.pop_front();
 			}
 
-			dq.push_back(temp[ind]);
+			dq.push_back(temp[i][j]);
 			if (i >= (window_x - 1) / 2)
-				res[ind - (window_x - 1) / 2 * y] = dq.front();
+				(*res)[i - (window_x - 1) / 2][j] = dq.front();
 		}
 		for (size_t i = x; i < x + (window_x - 1) / 2; i++) {
-			auto ind = index(2, {x, y}, {i, j});
-
-			if (!dq.empty() && dq.front() == temp[ind - window_x * y]) {
+			if (!dq.empty() && dq.front() == temp[i - window_x][j]) {
 				dq.pop_front();
 			}
 
 			if (dq.empty())
 				throw std::runtime_error("queue is empty");
 
-			res[ind - (window_x - 1) / 2 * y] = dq.front();
+			(*res)[i - (window_x - 1) / 2][j] = dq.front();
 		}
 	}
 
 	return res;
 }
 
-template<typename T>
-std::unique_ptr<T[]> suppress_threshold(const T *array, size_t x, size_t y,
-	T threshold)
+template<typename Input>
+std::unique_ptr<boost::multi_array<typename Input::element, 2>>
+suppress_non_max(const Input &array, size_t window_x, size_t window_y)
 {
-	auto res = std::unique_ptr<T[]>(new T[size(2, {x, y})]);
-	for (size_t i = 0; i < x; i++) {
-		for (size_t j = 0; j < y; j++) {
-			auto ind = index(2, {x, y}, {i, j});
+	if (array.num_dimensions() != 2)
+		throw std::runtime_error("wrong number of dimensions");
 
-			if (array[ind] >= threshold)
-				res[ind] = array[ind];
+	auto filter = max_filter(array, window_x, window_y);
+	auto res = std::unique_ptr<boost::multi_array<typename Input::element, 2>>(
+		new boost::multi_array<typename Input::element, 2>(
+			boost::extents[array.shape()[0]][array.shape()[1]]));
+	for (size_t i = 0; i < array.shape()[0]; i++) {
+		for (size_t j = 0; j < array.shape()[1]; j++) {
+			if (array[i][j] == (*filter)[i][j])
+				(*res)[i][j] = array[i][j];
 			else
-				res[ind] = static_cast<T>(0);
-		}
-	}
-
-	return res;
-}
-
-template<typename T>
-std::unique_ptr<T[]> suppress_non_max(const T *array, size_t x, size_t y,
-	size_t window_x, size_t window_y)
-{
-	auto filter = max_filter(array, x, y, window_x, window_y);
-	auto res = std::unique_ptr<T[]>(new T[size(2, {x, y})]);
-	for (size_t i = 0; i < x; i++) {
-		for (size_t j = 0; j < y; j++) {
-			auto ind = index(2, {x, y}, {i, j});
-
-			if (array[ind] == filter[ind])
-				res[ind] = array[ind];
-			else
-				res[ind] = static_cast<T>(0);
+				(*res)[i][j] = static_cast<typename Input::element>(0);
 		}
 	}
 
@@ -188,13 +139,16 @@ std::unique_ptr<T[]> suppress_non_max(const T *array, size_t x, size_t y,
 
 template<typename T>
 std::unique_ptr<std::vector<std::pair<size_t, size_t>>> where_not_less(
-	const T* array, size_t x, size_t y, T comp)
+	const T &array, typename T::element comp)
 {
+	if (array.num_dimensions() != 2)
+		throw std::runtime_error("wrong number of dimensions");
+
 	auto res = std::unique_ptr<std::vector<std::pair<size_t, size_t>>>(
 		new std::vector<std::pair<size_t, size_t>>());
-	for (size_t i = 0; i < x; i++) {
-		for (size_t j = 0; j < y; j++) {
-			if (array[index(2, {x, y}, {i, j})] >= comp) {
+	for (size_t i = 0; i < array.shape()[0]; i++) {
+		for (size_t j = 0; j < array.shape()[1]; j++) {
+			if (array[i][j] >= comp) {
 				res->push_back({i, j});
 			}
 		}

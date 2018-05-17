@@ -4,6 +4,7 @@
 #include "array.hpp"
 #include "image.hpp"
 
+#include <boost/multi_array.hpp>
 #include <tensorflow/contrib/lite/kernels/register.h>
 #include <tensorflow/contrib/lite/model.h>
 #include <algorithm>
@@ -67,62 +68,63 @@ public:
 	}
 
 	template<typename Image>
-	inline void estimate(
-		const Image *image, size_t height, size_t width, size_t channels)
+	inline void estimate(const Image &image)
 	{
+		if (image.num_dimensions() != 3)
+			throw std::runtime_error("wrong number of dimensions");
+
+		auto height = image.shape()[0];
+		auto width = image.shape()[1];
+		auto channels = image.shape()[2];
+
 		if (channels != model_channels)
 			throw std::runtime_error("bad number of channels");
 		if (height == 0 || width == 0)
 			throw std::runtime_error("invalid image parameters");
 
-		auto resized_image = image::resize<Image, float>(
-			image, height, width, channels, model_height, model_width);
+		auto resized_image = image::resize(image, model_height, model_width);
 
-		Value *input = get_input();
-		std::copy(resized_image.get(), resized_image.get() +
-			image::size(model_height, model_width, model_channels),
-			input);
+		std::copy(resized_image->data(),
+			resized_image->data() + resized_image->num_elements(),
+			get_input());
 
 		if (interpreter->Invoke() != kTfLiteOk)
 			throw std::runtime_error("Invoke failed");
 
-		Value *output = get_output();
+		boost::multi_array_ref<float, 3> output(get_output(),
+			boost::extents[model_height / 8][model_width / 8][heat_mat_shape_0 + paf_mat_shape_0]);
 
-		const size_t output_shape[] = {model_height / 8, model_width / 8, heat_mat_shape_0 + paf_mat_shape_0};
-		const size_t heat_mat_shape[] = {heat_mat_shape_0, model_height / 8, model_width / 8};
-		const size_t paf_mat_shape[] = {paf_mat_shape_0, model_height / 8, model_width / 8};
-		auto heat_mat = std::unique_ptr<Value[]>(new Value[
-			heat_mat_shape[0] * heat_mat_shape[1] * heat_mat_shape[2]]);
-		auto paf_mat = std::unique_ptr<Value[]>(new Value[
-			paf_mat_shape[0] * paf_mat_shape[1] * paf_mat_shape[2]]);
+		boost::multi_array<float, 3> heat_mat(
+			boost::extents[heat_mat_shape_0][model_height / 8][model_width / 8]);
+		boost::multi_array<float, 3> paf_mat(
+			boost::extents[paf_mat_shape_0][model_height / 8][model_width / 8]);
 
-		for (size_t i = 0; i < heat_mat_shape[0]; i++) {
-			for (size_t j = 0; j < heat_mat_shape[1]; j++) {
-				for (size_t k = 0; k < heat_mat_shape[2]; k++) {
-					heat_mat[array::index(3, heat_mat_shape, {i, j, k})]
-						= output[array::index(3, output_shape, {j, k, i})];
+		for (size_t i = 0; i < heat_mat.shape()[0]; i++) {
+			for (size_t j = 0; j < heat_mat.shape()[1]; j++) {
+				for (size_t k = 0; k < heat_mat.shape()[2]; k++) {
+					heat_mat[i][j][k] = output[j][k][i];
 				}
 			}
 		}
-		for (size_t i = 0; i < paf_mat_shape[0]; i++) {
-			for (size_t j = 0; j < paf_mat_shape[1]; j++) {
-				for (size_t k = 0; k < paf_mat_shape[2]; k++) {
-					paf_mat[array::index(3, paf_mat_shape, {i, j, k})]
-						= output[array::index(3, output_shape, {j, k, i + heat_mat_shape[0]})];
+		for (size_t i = 0; i < paf_mat.shape()[0]; i++) {
+			for (size_t j = 0; j < paf_mat.shape()[1]; j++) {
+				for (size_t k = 0; k < paf_mat.shape()[2]; k++) {
+					paf_mat[i][j][k] = output[j][k][i + heat_mat_shape_0];
 				}
 			}
 		}
 
 		std::vector<std::unique_ptr<std::vector<std::pair<size_t, size_t>>>>
 			coords;
-		for (size_t i = 0; i < heat_mat_shape[0] - 1; i++) {
-			auto s1 = array::suppress_threshold<Value>(&heat_mat[array::index(3, heat_mat_shape, {i, 0, 0})],
-				heat_mat_shape[1], heat_mat_shape[2], nms_threshold);
-			auto s2 = array::suppress_non_max<Value>(s1.get(), heat_mat_shape[1], heat_mat_shape[2], nms_window, nms_window);
-			auto coord = array::where_not_less(s2.get(), heat_mat_shape[1], heat_mat_shape[2], nms_threshold);
+		for (size_t i = 0; i < heat_mat.shape()[0] - 1; i++) {
+			auto s1 = array::suppress_threshold(heat_mat[i], nms_threshold);
+			auto s2 = array::suppress_non_max(*s1, nms_window, nms_window);
+			auto coord = array::where_not_less(*s2, nms_threshold);
+			for (auto &c: *coord) {
+				std::cout << c.first << "," << c.second << std::endl;
+			}
 			coords.push_back(std::move(coord));
 		}
-
 
 	}
 
@@ -132,7 +134,7 @@ private:
 		float score;
 		size_t part_idx1, part_idx2;
 		size_t idx1, idx2;
-		size_t coord1, coord2;
+		std::pair<float, float> coord1, coord2;
 		float score1, score2;
 
 		PartPair(float sc, size_t pi1, size_t pi2, size_t i1, size_t i2,
@@ -157,23 +159,26 @@ private:
 	tflite::ops::builtin::BuiltinOpResolver resolver{};
 	std::unique_ptr<tflite::Interpreter> interpreter{};
 
-	inline Value *get_input()
+	inline float *get_input()
 	{
-		return interpreter->typed_input_tensor<Value>(0);
+		return interpreter->typed_input_tensor<float>(0);
 	}
 
-	inline Value *get_output()
+	inline float *get_output()
 	{
-		return interpreter->typed_output_tensor<Value>(0);
+		return interpreter->typed_output_tensor<float>(0);
 	}
 
 	std::unique_ptr<std::vector<PartPair>> score_pairs(
 		size_t part_idx1, size_t part_idx2,
 		const std::vector<std::pair<size_t, size_t>> &coord_list1,
 		const std::vector<std::pair<size_t, size_t>> &coord_list2,
-		Value *paf_mat_x, Value *paf_mat_y, Value *heatmap,
+		float *paf_mat_x, float *paf_mat_y, size_t *paf_mat_shape,
+		float *heatmap, size_t *heatmap_shape,
 		float rescale1, float rescale2)
 	{
+		std::vector<PartPair> connection_temp;
+
 		size_t idx1 = 0;
 		for (auto coord1 = coord_list1.begin();
 				coord1 != coord_list1.end();
@@ -194,8 +199,15 @@ private:
 
 				if (count < paf_count_threshold || score <= 0.0f)
 					continue;
-
-				// TODO
+/*
+				connection_temp.push_back(PartPair(
+					score,
+					part_idx1, part_idx2,
+					idx1, idx2,
+					std::make_pair(x1 * rescale1, y1 * rescale2),
+					std::make_pair(x2 * rescale1, y2 * rescale2),
+					TODO
+					*/
 			}
 		}
 	}
@@ -236,8 +248,8 @@ private:
 
 	std::pair<float, size_t> get_score(
 		size_t x1, size_t y1, size_t x2, size_t y2,
-		Value *paf_mat_x, Value *paf_mat_y)
-	{
+		float *paf_mat_x, float *paf_mat_y, size_t *paf_mat_shape)
+	{/* TODO
 		auto dx = x2 - x1;
 		auto dy = y2 - y1;
 		auto norm_vec = hypotf(static_cast<float>(dx), static_cast<float>(dy));
@@ -255,6 +267,7 @@ private:
 			size_t y = y1 + (dy * i + paf_num_inter / 2) / paf_num_inter;
 
 			float curr = paf_mat_x[y][x] * vx + paf_mat_y[y][x] * vy;
+			// TODO: use vector
 			if (curr > local_paf_threshold) {
 				score += curr;
 				count++;
@@ -262,6 +275,9 @@ private:
 		}
 
 		return std::make_pair(score, count);
+	*/
+		// TODO: REMOVE THIS
+		return std::make_pair(0.0f, 0);
 	}
 };
 
