@@ -41,7 +41,7 @@ int main()
 			auto &body_parts = human.get_body_parts();
 			for (auto &part: body_parts) {
 				std::cout << static_cast<int>(part.first) << ": "
-					<< part.second.x() << "," << part.second.y() << std::endl;
+					<< part.second.x() * im[0] << "," << part.second.y() * im[1] << std::endl;
 			}
 			std::cout << std::endl;
 		}
