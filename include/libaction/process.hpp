@@ -3,6 +3,8 @@
 
 #include <queue>
 #include <stdexcept>
+#include <utility>
+#include <vector>
 
 namespace libaction
 {
@@ -125,6 +127,22 @@ std::unique_ptr<T[]> suppress_non_max(const T *array, size_t x, size_t y,
 		}
 	}
 
+	return res;
+}
+
+template<typename T>
+std::unique_ptr<std::vector<std::pair<size_t, size_t>>> where_not_less(
+	const T* array, size_t x, size_t y, T comp)
+{
+	auto res = std::unique_ptr<std::vector<std::pair<size_t, size_t>>>(
+		new std::vector<std::pair<size_t, size_t>>());
+	for (size_t i = 0; i < x; i++) {
+		for (size_t j = 0; j < y; j++) {
+			if (array[i * y + j] >= comp) {
+				res->push_back({i, j});
+			}
+		}
+	}
 	return res;
 }
 

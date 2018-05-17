@@ -35,7 +35,7 @@ int main()
 
 		const size_t im[] = {232, 217, 3};
 		auto image = read_image("p1.raw", im[0], im[1], im[2]);
-		estimator.estimate(image.get(), im[0], im[1], im[2]);
+		estimator.estimate<uint8_t>(image.get(), im[0], im[1], im[2]);
 
 	} catch (std::exception &e) {
 		std::cerr << "Error: " << e.what() << std::endl;

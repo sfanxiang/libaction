@@ -23,38 +23,53 @@ inline constexpr size_t size(
 	return height * width * channels;
 }
 
-std::unique_ptr<uint8_t[]> resize(
-	const uint8_t *image, size_t height, size_t width, size_t channels,
+template<typename Input, typename Output>
+std::unique_ptr<Output[]> resize(
+	const Input *image, size_t height, size_t width, size_t channels,
 	size_t target_height, size_t target_width)
 {
 	if (height == 0 || width == 0 || channels == 0
 			|| target_height == 0 || target_width == 0)
 		throw std::runtime_error("invalid image parameters");
 
-	auto target_image = std::unique_ptr<uint8_t[]>(
-		new uint8_t[size(target_height, target_width, channels)]);
+	auto target_image = std::unique_ptr<Output[]>(
+		new Output[size(target_height, target_width, channels)]);
 
-	float x_ratio = (static_cast<float>(height - 1)) / target_height;
-	float y_ratio = (static_cast<float>(width - 1)) / target_width;
+	float x_ratio = static_cast<float>(height) / target_height;
+	float y_ratio = static_cast<float>(width) / target_width;
 
 	for (size_t i = 0; i < target_height; i++) {
 		for (size_t j = 0; j < target_width; j++) {
-			size_t x = (height - 1) * i / target_height;
-			size_t y = (width - 1) * j / target_width;
+			size_t x = height * i / target_height;
+			size_t y = width * j / target_width;
 			float x_diff = (x_ratio * i) - x;
 			float y_diff = (y_ratio * j) - y;
 
-			auto *a = &image[index(height, width, channels, x, y, 0)];
-			auto *b = &image[index(height, width, channels, x, y + 1, 0)];
-			auto *c = &image[index(height, width, channels, x + 1, y, 0)];
-			auto *d = &image[index(height, width, channels, x + 1, y + 1, 0)];
-
-			auto *t = &target_image[index(
-				target_height, target_width, channels, i, j, 0)];
-
-			for (size_t k = 0; k < channels; k++) {
-				t[k] = a[k]*(1-x_diff)*(1-y_diff) + b[k]*(1-x_diff)*(y_diff) +
-					   c[k]*(x_diff)*(1-y_diff)   + d[k]*(x_diff*y_diff);
+			if (x + 1 < height && y + 1 < width) {
+				for (size_t k = 0; k < channels; k++) {
+					target_image[index(target_height, target_width, channels, i, j, k)] =
+						image[index(height, width, channels, x, y, k)] * (1 - x_diff) * (1 - y_diff) +
+						image[index(height, width, channels, x, y + 1, k)] * (1 - x_diff) * y_diff +
+						image[index(height, width, channels, x + 1, y, k)] * x_diff * (1 - y_diff) +
+						image[index(height, width, channels, x + 1, y + 1, k)] * x_diff * y_diff;
+				}
+			} else if (x + 1 < height) {
+				for (size_t k = 0; k < channels; k++) {
+					target_image[index(target_height, target_width, channels, i, j, k)] =
+						image[index(height, width, channels, x, y, k)] * (1 - x_diff) +
+						image[index(height, width, channels, x + 1, y, k)] * x_diff;
+				}
+			} else if (y + 1 < width) {
+				for (size_t k = 0; k < channels; k++) {
+					target_image[index(target_height, target_width, channels, i, j, k)] =
+						image[index(height, width, channels, x, y, k)] * (1 - y_diff) +
+						image[index(height, width, channels, x, y + 1, k)] * y_diff;
+				}
+			} else {
+				for (size_t k = 0; k < channels; k++) {
+					target_image[index(target_height, target_width, channels, i, j, k)] =
+						image[index(height, width, channels, x, y, k)];
+				}
 			}
 		}
 	}

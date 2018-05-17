@@ -12,6 +12,9 @@
 #include <stdexcept>
 #include <string>
 
+// TODO: temp
+#include <iostream>
+
 namespace libaction
 {
 
@@ -62,23 +65,20 @@ public:
 			throw std::runtime_error("AllocateTensors failed");
 	}
 
+	template<typename Image>
 	inline void estimate(
-		const uint8_t *image, size_t height, size_t width, size_t channels)
+		const Image *image, size_t height, size_t width, size_t channels)
 	{
 		if (channels != model_channels)
 			throw std::runtime_error("bad number of channels");
 		if (height == 0 || width == 0)
 			throw std::runtime_error("invalid image parameters");
 
-		std::unique_ptr<uint8_t[]> resized_image;
-		if (height != model_height || width != model_width) {
-			resized_image = image::resize(image, height, width, channels,
-				model_height, model_width);
-			image = resized_image.get();
-		}
+		auto resized_image = image::resize<Image, float>(
+			image, height, width, channels, model_height, model_width);
 
 		Value *input = get_input();
-		std::copy(image, image +
+		std::copy(resized_image.get(), resized_image.get() +
 			image::size(model_height, model_width, model_channels),
 			input);
 
@@ -86,6 +86,7 @@ public:
 			throw std::runtime_error("Invoke failed");
 
 		Value *output = get_output();
+
 		const size_t output_shape[] = {model_height / 8, model_width / 8, 19 + 38};
 		const size_t heat_mat_shape[] = {19, model_height / 8, model_width / 8};
 		const size_t paf_mat_shape[] = {38, model_height / 8, model_width / 8};
@@ -111,15 +112,27 @@ public:
 			}
 		}
 
+		// TODO: test
+		size_t base = heat_mat_shape[1] * 17 * heat_mat_shape[2];
+		std::cout << heat_mat[0] << heat_mat[1] << heat_mat[2] << std::endl << heat_mat[base] << heat_mat[base+1] << heat_mat[base+2] << std::endl;
+
+		std::vector<std::pair<size_t, size_t>> coords;
 		for (size_t i = 0; i < heat_mat_shape[0] - 1; i++) {
-			auto s1 = process::suppress_threshold<Value>(&heat_mat[i], heat_mat_shape[0], heat_mat_shape[1], 0.15f /* TODO: NMS_threshold */);
-			auto s2 = process::suppress_non_max<Value>(&heat_mat[i], heat_mat_shape[0], heat_mat_shape[1], 5, 5);
-			// TODO
-			s2[0] = 1;
+			auto s1 = process::suppress_threshold<Value>(&heat_mat[i], heat_mat_shape[1], heat_mat_shape[2], nms_threshold);
+			auto s2 = process::suppress_non_max<Value>(s1.get(), heat_mat_shape[1], heat_mat_shape[2], nms_window, nms_window);
+			auto coord = process::where_not_less(s2.get(), heat_mat_shape[1], heat_mat_shape[2], nms_threshold);
+			for (auto &c: *coord) {
+				coords.push_back(c);
+				std::cout << c.first << "," << c.second << " ";
+			}
+			std::cout << std::endl;
 		}
 	}
 
 private:
+	const Value nms_threshold = 0.15;
+	const size_t nms_window = 5;
+
 	size_t model_height, model_width, model_channels;
 
 	ErrorReporter error_reporter{};
