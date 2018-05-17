@@ -35,15 +35,26 @@ int main()
 
 		const size_t im[] = {232, 217, 3};
 		auto image = read_image("p1.raw", im[0], im[1], im[2]);
-		auto humans = estimator.estimate(*image);
 
-		for (auto &human: *humans) {
-			auto &body_parts = human.get_body_parts();
-			for (auto &part: body_parts) {
-				std::cout << static_cast<int>(part.first) << ": "
-					<< part.second.x() * im[0] << "," << part.second.y() * im[1] << std::endl;
+		for (int i = 0; i < 20; i++) {
+			auto time = std::chrono::steady_clock::now();
+
+			auto humans = estimator.estimate(*image);
+
+			for (auto &human: *humans) {
+				auto &body_parts = human.get_body_parts();
+				for (auto &part: body_parts) {
+					std::cout << static_cast<int>(part.first) << ": "
+						<< part.second.x() * im[0] << ","
+						<< part.second.y() * im[1] << std::endl;
+				}
+				std::cout << std::endl;
 			}
-			std::cout << std::endl;
+
+			auto now = std::chrono::steady_clock::now();
+			auto elapsed = std::chrono::duration_cast<
+				std::chrono::microseconds>(now - time).count();
+			std::cout << "Elapsed: " << elapsed << std::endl << std::endl;
 		}
 	} catch (std::exception &e) {
 		std::cerr << "Error: " << e.what() << std::endl;
