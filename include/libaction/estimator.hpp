@@ -1,8 +1,8 @@
 #ifndef LIBACTION_ESTIMATOR_HPP_
 #define LIBACTION_ESTIMATOR_HPP_
 
+#include "array.hpp"
 #include "image.hpp"
-#include "process.hpp"
 
 #include <tensorflow/contrib/lite/kernels/register.h>
 #include <tensorflow/contrib/lite/model.h>
@@ -87,9 +87,9 @@ public:
 
 		Value *output = get_output();
 
-		const size_t output_shape[] = {model_height / 8, model_width / 8, 19 + 38};
-		const size_t heat_mat_shape[] = {19, model_height / 8, model_width / 8};
-		const size_t paf_mat_shape[] = {38, model_height / 8, model_width / 8};
+		const size_t output_shape[] = {model_height / 8, model_width / 8, heat_mat_shape_0 + paf_mat_shape_0};
+		const size_t heat_mat_shape[] = {heat_mat_shape_0, model_height / 8, model_width / 8};
+		const size_t paf_mat_shape[] = {paf_mat_shape_0, model_height / 8, model_width / 8};
 		auto heat_mat = std::unique_ptr<Value[]>(new Value[
 			heat_mat_shape[0] * heat_mat_shape[1] * heat_mat_shape[2]]);
 		auto paf_mat = std::unique_ptr<Value[]>(new Value[
@@ -98,40 +98,39 @@ public:
 		for (size_t i = 0; i < heat_mat_shape[0]; i++) {
 			for (size_t j = 0; j < heat_mat_shape[1]; j++) {
 				for (size_t k = 0; k < heat_mat_shape[2]; k++) {
-					heat_mat[(i * heat_mat_shape[1] + j) * heat_mat_shape[2] + k]
-						= output[(j * output_shape[1] + k) * output_shape[2] + i];
+					heat_mat[array::index(3, heat_mat_shape, {i, j, k})]
+						= output[array::index(3, output_shape, {j, k, i})];
 				}
 			}
 		}
 		for (size_t i = 0; i < paf_mat_shape[0]; i++) {
 			for (size_t j = 0; j < paf_mat_shape[1]; j++) {
 				for (size_t k = 0; k < paf_mat_shape[2]; k++) {
-					paf_mat[(i * paf_mat_shape[1] + j) * paf_mat_shape[2] + k]
-						= output[(j * output_shape[1] + k) * output_shape[2] + i + heat_mat_shape[0]];
+					paf_mat[array::index(3, paf_mat_shape, {i, j, k})]
+						= output[array::index(3, output_shape, {j, k, i + heat_mat_shape[0]})];
 				}
 			}
 		}
 
-		// TODO: test
-		size_t base = heat_mat_shape[1] * 17 * heat_mat_shape[2];
-		std::cout << heat_mat[0] << heat_mat[1] << heat_mat[2] << std::endl << heat_mat[base] << heat_mat[base+1] << heat_mat[base+2] << std::endl;
-
 		std::vector<std::pair<size_t, size_t>> coords;
 		for (size_t i = 0; i < heat_mat_shape[0] - 1; i++) {
-			auto s1 = process::suppress_threshold<Value>(&heat_mat[i], heat_mat_shape[1], heat_mat_shape[2], nms_threshold);
-			auto s2 = process::suppress_non_max<Value>(s1.get(), heat_mat_shape[1], heat_mat_shape[2], nms_window, nms_window);
-			auto coord = process::where_not_less(s2.get(), heat_mat_shape[1], heat_mat_shape[2], nms_threshold);
+			auto s1 = array::suppress_threshold<Value>(&heat_mat[array::index(3, heat_mat_shape, {i, 0, 0})],
+				heat_mat_shape[1], heat_mat_shape[2], nms_threshold);
+			auto s2 = array::suppress_non_max<Value>(s1.get(), heat_mat_shape[1], heat_mat_shape[2], nms_window, nms_window);
+			auto coord = array::where_not_less(s2.get(), heat_mat_shape[1], heat_mat_shape[2], nms_threshold);
 			for (auto &c: *coord) {
 				coords.push_back(c);
-				std::cout << c.first << "," << c.second << " ";
 			}
-			std::cout << std::endl;
+		}
+		for (auto &c: coords) {
+			std::cout << c.first << ' ' << c.second << std::endl;
 		}
 	}
 
 private:
 	const Value nms_threshold = 0.15;
 	const size_t nms_window = 5;
+	const size_t heat_mat_shape_0 = 19, paf_mat_shape_0 = 38;
 
 	size_t model_height, model_width, model_channels;
 
