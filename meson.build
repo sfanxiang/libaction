@@ -3,5 +3,4 @@ project('libaction', 'cpp',
 
 deptensorflow = dependency('tensorflow-lite')
 
-subdir('src')
 subdir('demo')
