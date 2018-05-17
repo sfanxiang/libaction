@@ -139,8 +139,8 @@ public:
 				*coords[part_idx1], *coords[part_idx2],
 				paf_mat[paf_x_idx], paf_mat[paf_y_idx],
 				heat_mat,
-				1.0f / static_cast<float>(heat_mat.shape()[2]),
-				1.0f / static_cast<float>(heat_mat.shape()[1])
+				1.0f / static_cast<float>(heat_mat.shape()[1]),
+				1.0f / static_cast<float>(heat_mat.shape()[2])
 			);
 			pairs_by_conn.insert(pairs_by_conn.end(), pairs->begin(), pairs->end());
 		}
@@ -221,15 +221,15 @@ private:
 		for (auto coord1 = coord_list1.begin();
 				coord1 != coord_list1.end();
 				++coord1, ++idx1) {
-			auto y1 = coord1->first;
-			auto x1 = coord1->second;
+			auto x1 = coord1->first;
+			auto y1 = coord1->second;
 
 			size_t idx2 = 0;
 			for (auto coord2 = coord_list2.begin();
 					coord2 != coord_list2.end();
 					++coord2, ++idx2) {
-				auto y2 = coord2->first;
-				auto x2 = coord2->second;
+				auto x2 = coord2->first;
+				auto y2 = coord2->second;
 
 				auto score_count = get_score(x1, y1, x2, y2, paf_mat_x, paf_mat_y);
 				auto &score = score_count.first;
@@ -239,8 +239,8 @@ private:
 					continue;
 
 				if (heatmap.shape()[0] <= part_idx1 || heatmap.shape()[0] <= part_idx2 ||
-						heatmap.shape()[1] <= y1 || heatmap.shape()[1] <= y2 ||
-						heatmap.shape()[2] <= x1 || heatmap.shape()[2] <= x2)
+						heatmap.shape()[1] <= x1 || heatmap.shape()[1] <= x2 ||
+						heatmap.shape()[2] <= y1 || heatmap.shape()[2] <= y2)
 					throw std::runtime_error("out of bound");
 
 				connection_temp.push_back(PartPair(
@@ -249,8 +249,8 @@ private:
 					idx1, idx2,
 					std::make_pair(x1 * rescale1, y1 * rescale2),
 					std::make_pair(x2 * rescale1, y2 * rescale2),
-					heatmap[part_idx1][y1][x1],
-					heatmap[part_idx2][y2][x2]
+					heatmap[part_idx1][x1][y1],
+					heatmap[part_idx2][x2][y2]
 				));
 			}
 		}
@@ -281,10 +281,10 @@ private:
 	{
 		if (paf_mat_x.num_dimensions() != 2 || paf_mat_y.num_dimensions() != 2)
 			throw std::runtime_error("wrong number of dimensions");
-		if (y1 >= static_cast<ptrdiff_t>(paf_mat_x.shape()[0]) ||
-				y2 >= static_cast<ptrdiff_t>(paf_mat_y.shape()[0]) ||
-				x1 >= static_cast<ptrdiff_t>(paf_mat_x.shape()[1]) ||
-				x2 >= static_cast<ptrdiff_t>(paf_mat_y.shape()[1]))
+		if (x1 >= static_cast<ptrdiff_t>(paf_mat_x.shape()[0]) ||
+				x2 >= static_cast<ptrdiff_t>(paf_mat_y.shape()[0]) ||
+				y1 >= static_cast<ptrdiff_t>(paf_mat_x.shape()[1]) ||
+				y2 >= static_cast<ptrdiff_t>(paf_mat_y.shape()[1]))
 			throw std::runtime_error("out of bound");
 
 		auto dx = x2 - x1;
@@ -303,7 +303,7 @@ private:
 			ptrdiff_t x = x1 + (dx * i + static_cast<ptrdiff_t>(paf_num_inter / 2)) / static_cast<ptrdiff_t>(paf_num_inter);
 			ptrdiff_t y = y1 + (dy * i + static_cast<ptrdiff_t>(paf_num_inter / 2)) / static_cast<ptrdiff_t>(paf_num_inter);
 
-			float curr = paf_mat_x[y][x] * vx + paf_mat_y[y][x] * vy;
+			float curr = paf_mat_x[x][y] * vy + paf_mat_y[x][y] * vx;
 			if (curr > local_paf_threshold) {
 				score += curr;
 				count++;
