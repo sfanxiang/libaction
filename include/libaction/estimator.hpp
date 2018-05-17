@@ -2,20 +2,23 @@
 #define LIBACTION_ESTIMATOR_HPP_
 
 #include "array.hpp"
+#include "coco_parts.hpp"
+#include "human.hpp"
 #include "image.hpp"
+#include "part_pair.hpp"
 
 #include <boost/multi_array.hpp>
 #include <tensorflow/contrib/lite/kernels/register.h>
 #include <tensorflow/contrib/lite/model.h>
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstddef>
+#include <list>
 #include <memory>
+#include <set>
 #include <stdexcept>
 #include <string>
-
-// TODO: temp
-#include <iostream>
 
 namespace libaction
 {
@@ -68,7 +71,7 @@ public:
 	}
 
 	template<typename Image>
-	inline void estimate(const Image &image)
+	inline std::unique_ptr<std::list<Human>> estimate(const Image &image)
 	{
 		if (image.num_dimensions() != 3)
 			throw std::runtime_error("wrong number of dimensions");
@@ -120,37 +123,67 @@ public:
 			auto s1 = array::suppress_threshold(heat_mat[i], nms_threshold);
 			auto s2 = array::suppress_non_max(*s1, nms_window, nms_window);
 			auto coord = array::where_not_less(*s2, nms_threshold);
-			for (auto &c: *coord) {
-				std::cout << c.first << "," << c.second << std::endl;
-			}
 			coords.push_back(std::move(coord));
 		}
 
+		std::vector<PartPair> pairs_by_conn;
+		auto coco_pairs = coco_parts::pairs();
+		auto coco_pairs_network = coco_parts::pairs_network();
+		for (size_t i = 0; i < std::min(coco_pairs.size(), coco_pairs_network.size()); i++) {
+			auto part_idx1 = coco_pairs[i].first;
+			auto part_idx2 = coco_pairs[i].second;
+			auto paf_x_idx = coco_pairs_network[i].first;
+			auto paf_y_idx = coco_pairs_network[i].second;
+			auto pairs = score_pairs(
+				part_idx1, part_idx2,
+				*coords[part_idx1], *coords[part_idx2],
+				paf_mat[paf_x_idx], paf_mat[paf_y_idx],
+				heat_mat,
+				1.0f / static_cast<float>(heat_mat.shape()[2]),
+				1.0f / static_cast<float>(heat_mat.shape()[1])
+			);
+			pairs_by_conn.insert(pairs_by_conn.end(), pairs->begin(), pairs->end());
+		}
+
+		auto humans = std::unique_ptr<std::list<Human>>(new std::list<Human>());
+		for (auto &pair: pairs_by_conn)
+			humans->push_back(Human(std::array<PartPair, 1>{pair}));
+
+		for (auto i = humans->begin(); i != humans->end(); ) {
+			bool merged = false;
+			auto j = i; ++j;
+			for (; j != humans->end(); j++) {
+				if (i->is_connected(*j)) {
+					merged = true;
+					i->merge(*j);
+					humans->erase(j);
+					break;
+				}
+			}
+			if (!merged)
+				++i;
+		}
+
+		for (auto i = humans->begin(); i != humans->end(); ) {
+			if (i->part_count() < part_count_threshold
+					|| i->max_score() < part_score_threshold)
+				i = humans->erase(i);
+			else
+				++i;
+		}
+
+		return humans;
 	}
 
 private:
-	struct PartPair
-	{
-		float score;
-		size_t part_idx1, part_idx2;
-		size_t idx1, idx2;
-		std::pair<float, float> coord1, coord2;
-		float score1, score2;
-
-		PartPair(float sc, size_t pi1, size_t pi2, size_t i1, size_t i2,
-			size_t cd1, size_t cd2, float sc1, float sc2)
-		:
-			score(sc), part_idx1(pi1), part_idx2(pi2), idx1(i1), idx2(i2),
-			coord1(cd1), coord2(cd2), score1(sc1), score2(sc2)
-		{}
-	};
-
 	const size_t heat_mat_shape_0 = 19, paf_mat_shape_0 = 38;
 	const float nms_threshold = 0.15;
 	const size_t nms_window = 5;
 	const size_t paf_num_inter = 10;
 	const float local_paf_threshold = 0.2;
 	const size_t paf_count_threshold = 5;
+	const size_t part_count_threshold = 4;
+	const float part_score_threshold = 4.5;
 
 	size_t model_height, model_width, model_channels;
 
@@ -169,14 +202,19 @@ private:
 		return interpreter->typed_output_tensor<float>(0);
 	}
 
+	template<typename PafMatX, typename PafMatY, typename Heatmap>
 	std::unique_ptr<std::vector<PartPair>> score_pairs(
 		size_t part_idx1, size_t part_idx2,
 		const std::vector<std::pair<size_t, size_t>> &coord_list1,
 		const std::vector<std::pair<size_t, size_t>> &coord_list2,
-		float *paf_mat_x, float *paf_mat_y, size_t *paf_mat_shape,
-		float *heatmap, size_t *heatmap_shape,
-		float rescale1, float rescale2)
+		const PafMatX &paf_mat_x, const PafMatY &paf_mat_y,
+		const Heatmap &heatmap, float rescale1, float rescale2)
 	{
+		if (paf_mat_x.num_dimensions() != 2 ||
+				paf_mat_y.num_dimensions() != 2 ||
+				heatmap.num_dimensions() != 3)
+			throw std::runtime_error("wrong number of dimensions");
+
 		std::vector<PartPair> connection_temp;
 
 		size_t idx1 = 0;
@@ -199,57 +237,56 @@ private:
 
 				if (count < paf_count_threshold || score <= 0.0f)
 					continue;
-/*
+
+				if (heatmap.shape()[0] <= part_idx1 || heatmap.shape()[0] <= part_idx2 ||
+						heatmap.shape()[1] <= y1 || heatmap.shape()[1] <= y2 ||
+						heatmap.shape()[2] <= x1 || heatmap.shape()[2] <= x2)
+					throw std::runtime_error("out of bound");
+
 				connection_temp.push_back(PartPair(
 					score,
 					part_idx1, part_idx2,
 					idx1, idx2,
 					std::make_pair(x1 * rescale1, y1 * rescale2),
 					std::make_pair(x2 * rescale1, y2 * rescale2),
-					TODO
-					*/
+					heatmap[part_idx1][y1][x1],
+					heatmap[part_idx2][y2][x2]
+				));
 			}
 		}
+
+		std::sort(connection_temp.begin(), connection_temp.end(),
+			[] (const PartPair &x, const PartPair &y)
+			{ return x.score() > y.score(); });
+
+		auto connection = std::unique_ptr<std::vector<PartPair>>(
+			new std::vector<PartPair>());
+		std::set<size_t> used_idx1, used_idx2;
+		for (auto &candidate: connection_temp) {
+			if (used_idx1.find(candidate.idx1()) != used_idx1.end() ||
+					used_idx2.find(candidate.idx2()) != used_idx2.end())
+				continue;
+			connection->push_back(candidate);
+			used_idx1.insert(candidate.idx1());
+			used_idx2.insert(candidate.idx2());
+		}
+
+		return connection;
 	}
 
-	/* TODO: REMOVE:
-
-    def score_pairs(part_idx1, part_idx2, coord_list1, coord_list2, paf_mat_x, paf_mat_y, heatmap, rescale=(1.0, 1.0)):
-        connection_temp = []
-
-        for idx1, (y1, x1) in enumerate(zip(coord_list1[0], coord_list1[1])):
-            for idx2, (y2, x2) in enumerate(zip(coord_list2[0], coord_list2[1])):
-                score, count = PoseEstimator.get_score(x1, y1, x2, y2, paf_mat_x, paf_mat_y)
-                if count < PoseEstimator.PAF_Count_Threshold or score <= 0.0:
-                    continue
-                connection_temp.append(PoseEstimator.PartPair(
-                    score=score,
-                    part_idx1=part_idx1, part_idx2=part_idx2,
-                    idx1=idx1, idx2=idx2,
-                    coord1=(x1 * rescale[0], y1 * rescale[1]),
-                    coord2=(x2 * rescale[0], y2 * rescale[1]),
-                    score1=heatmap[part_idx1][y1][x1],
-                    score2=heatmap[part_idx2][y2][x2],
-                ))
-
-        connection = []
-        used_idx1, used_idx2 = set(), set()
-        for candidate in sorted(connection_temp, key=lambda x: x.score, reverse=True):
-            # check not connected
-            if candidate.idx1 in used_idx1 or candidate.idx2 in used_idx2:
-                continue
-            connection.append(candidate)
-            used_idx1.add(candidate.idx1)
-            used_idx2.add(candidate.idx2)
-
-        return connection
-
-	*/
-
+	template<typename PafMatX, typename PafMatY>
 	std::pair<float, size_t> get_score(
-		size_t x1, size_t y1, size_t x2, size_t y2,
-		float *paf_mat_x, float *paf_mat_y, size_t *paf_mat_shape)
-	{/* TODO
+		ptrdiff_t x1, ptrdiff_t y1, ptrdiff_t x2, ptrdiff_t y2,
+		const PafMatX &paf_mat_x, const PafMatY &paf_mat_y)
+	{
+		if (paf_mat_x.num_dimensions() != 2 || paf_mat_y.num_dimensions() != 2)
+			throw std::runtime_error("wrong number of dimensions");
+		if (y1 >= static_cast<ptrdiff_t>(paf_mat_x.shape()[0]) ||
+				y2 >= static_cast<ptrdiff_t>(paf_mat_y.shape()[0]) ||
+				x1 >= static_cast<ptrdiff_t>(paf_mat_x.shape()[1]) ||
+				x2 >= static_cast<ptrdiff_t>(paf_mat_y.shape()[1]))
+			throw std::runtime_error("out of bound");
+
 		auto dx = x2 - x1;
 		auto dy = y2 - y1;
 		auto norm_vec = hypotf(static_cast<float>(dx), static_cast<float>(dy));
@@ -262,12 +299,11 @@ private:
 
 		float score = 0.0f;
 		size_t count = 0;
-		for (size_t i = 0; i < paf_num_inter; i++) {
-			size_t x = x1 + (dx * i + paf_num_inter / 2) / paf_num_inter;
-			size_t y = y1 + (dy * i + paf_num_inter / 2) / paf_num_inter;
+		for (ptrdiff_t i = 0; i < static_cast<ptrdiff_t>(paf_num_inter); i++) {
+			ptrdiff_t x = x1 + (dx * i + static_cast<ptrdiff_t>(paf_num_inter / 2)) / static_cast<ptrdiff_t>(paf_num_inter);
+			ptrdiff_t y = y1 + (dy * i + static_cast<ptrdiff_t>(paf_num_inter / 2)) / static_cast<ptrdiff_t>(paf_num_inter);
 
 			float curr = paf_mat_x[y][x] * vx + paf_mat_y[y][x] * vy;
-			// TODO: use vector
 			if (curr > local_paf_threshold) {
 				score += curr;
 				count++;
@@ -275,9 +311,6 @@ private:
 		}
 
 		return std::make_pair(score, count);
-	*/
-		// TODO: REMOVE THIS
-		return std::make_pair(0.0f, 0);
 	}
 };
 

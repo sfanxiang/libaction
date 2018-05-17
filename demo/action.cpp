@@ -1,6 +1,5 @@
 #include <boost/multi_array.hpp>
 #include <libaction/estimator.hpp>
-#include <libaction/image.hpp>
 #include <chrono>
 #include <cstdlib>
 #include <fstream>
@@ -36,8 +35,16 @@ int main()
 
 		const size_t im[] = {232, 217, 3};
 		auto image = read_image("p1.raw", im[0], im[1], im[2]);
-		estimator.estimate(*image);
+		auto humans = estimator.estimate(*image);
 
+		for (auto &human: *humans) {
+			auto &body_parts = human.get_body_parts();
+			for (auto &part: body_parts) {
+				std::cout << static_cast<int>(part.first) << ": "
+					<< part.second.x() << "," << part.second.y() << std::endl;
+			}
+			std::cout << std::endl;
+		}
 	} catch (std::exception &e) {
 		std::cerr << "Error: " << e.what() << std::endl;
 		return EXIT_FAILURE;
