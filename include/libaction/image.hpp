@@ -11,6 +11,7 @@ namespace libaction
 namespace image
 {
 
+// TODO: Resize is the second bottleneck. Optimize this function.
 template<typename Input>
 std::unique_ptr<boost::multi_array<typename Input::element, 3>> resize(
 	const Input &image, size_t target_height, size_t target_width)
