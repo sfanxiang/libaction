@@ -1,6 +1,7 @@
 #ifndef LIBACTION_ARRAY_HPP_
 #define LIBACTION_ARRAY_HPP_
 
+#include <algorithm>
 #include <memory>
 #include <queue>
 #include <stdexcept>
@@ -152,6 +153,61 @@ std::unique_ptr<std::vector<std::pair<size_t, size_t>>> where_not_less(
 				res->push_back({i, j});
 			}
 		}
+	}
+	return res;
+}
+
+template<typename T>
+std::unique_ptr<std::vector<size_t>> argmax(const T &array)
+{
+	if (array.num_dimensions() != 2)
+		throw std::runtime_error("wrong number of dimensions");
+
+	if (array.shape()[0] == 0)
+		throw std::runtime_error("empty array");
+
+	auto res = std::unique_ptr<std::vector<size_t>>(
+		new std::vector<size_t>());
+	for (size_t j = 0; j < array.shape()[1]; j++) {
+		auto max = array[0][j];
+		auto idx = 0;
+		for (size_t i = 1; i < array.shape()[0]; i++) {
+			if (array[i][j] > max) {
+				max = array[i][j];
+				idx = i;
+			}
+		}
+		res->push_back(idx);
+	}
+
+	return res;
+}
+
+template<typename T>
+std::unique_ptr<std::vector<std::pair<size_t, size_t>>> argmax_2d(
+	const T &array)
+{
+	if (array.num_dimensions() != 3)
+		throw std::runtime_error("wrong number of dimensions");
+
+	if (array.shape()[0] == 0 || array.shape()[1] == 0)
+		throw std::runtime_error("empty array");
+
+	auto height = array.shape()[0];
+	auto width = array.shape()[1];
+	auto depth = array.shape()[2];
+
+	boost::const_multi_array_ref<typename T::element, 2> reshaped(
+		array.data(), boost::extents[height * width][depth]);
+	auto am = argmax(reshaped);
+
+	auto res = std::unique_ptr<std::vector<std::pair<size_t, size_t>>>(
+		new std::vector<std::pair<size_t, size_t>>());
+
+	for (auto &coord: *am) {
+		auto x = coord / width;
+		auto y = coord % width;
+		res->push_back(std::make_pair(x, y));
 	}
 	return res;
 }

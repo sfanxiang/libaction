@@ -1,5 +1,7 @@
 #include <boost/multi_array.hpp>
-#include <libaction/estimator.hpp>
+#include <libaction/human.hpp>
+#include <libaction/multi/estimator.hpp>
+#include <libaction/single/estimator.hpp>
 #include <chrono>
 #include <cstdlib>
 #include <fstream>
@@ -27,11 +29,11 @@ std::unique_ptr<boost::multi_array<uint8_t, 3>> read_image(
 
 int main()
 {
-	const size_t height = 256, width = 144, channels = 3;
+	const size_t height = 224, width = 128, channels = 3;
 
 	try {
-		libaction::Estimator<float> estimator("graph_tflite.tflite", 0,
-			height, width, channels);
+		libaction::single::Estimator<float> estimator("posenet_tflite.tflite",
+			0, height, width, channels);
 
 		const size_t im[] = {232, 217, 3};
 		auto image = read_image("p1.raw", im[0], im[1], im[2]);

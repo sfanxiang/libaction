@@ -1,10 +1,12 @@
-#ifndef LIBACTION_ESTIMATOR_HPP_
-#define LIBACTION_ESTIMATOR_HPP_
+#ifndef LIBACTION_MULTI_ESTIMATOR_HPP_
+#define LIBACTION_MULTI_ESTIMATOR_HPP_
 
-#include "array.hpp"
+#include "../array.hpp"
+#include "../body_part.hpp"
+#include "../human.hpp"
+#include "../image.hpp"
 #include "coco_parts.hpp"
 #include "human.hpp"
-#include "image.hpp"
 #include "part_pair.hpp"
 
 #include <boost/multi_array.hpp>
@@ -21,6 +23,8 @@
 #include <string>
 
 namespace libaction
+{
+namespace multi
 {
 
 namespace
@@ -60,18 +64,13 @@ public:
 		if (num_threads > 0)
 			interpreter->SetNumThreads(num_threads);
 
-		if (interpreter->ResizeInputTensor(0, {
-				1, static_cast<int>(model_height),
-				static_cast<int>(model_width),
-				static_cast<int>(model_channels)}) != kTfLiteOk)
-			throw std::runtime_error("ResizeInputTensor failed");
-
 		if (interpreter->AllocateTensors() != kTfLiteOk)
 			throw std::runtime_error("AllocateTensors failed");
 	}
 
 	template<typename Image>
-	inline std::unique_ptr<std::list<Human>> estimate(const Image &image)
+	inline std::unique_ptr<std::list<libaction::Human>> estimate(
+		const Image &image)
 	{
 		if (image.num_dimensions() != 3)
 			throw std::runtime_error("wrong number of dimensions");
@@ -172,7 +171,20 @@ public:
 				++i;
 		}
 
-		return humans;
+		auto res_humans = std::unique_ptr<std::list<libaction::Human>>(
+			new std::list<libaction::Human>());
+		for (auto &x: *humans) {
+			std::list<libaction::BodyPart> parts;
+			for (auto &y: x.get_body_parts()) {
+				parts.push_back(libaction::BodyPart(
+					coco_parts::to_libaction_part_index(
+						static_cast<coco_parts::Part>(y.second.part_idx())),
+					y.second.x(), y.second.y(), y.second.score()));
+			}
+			res_humans->push_back(libaction::Human(parts));
+		}
+
+		return res_humans;
 	}
 
 private:
@@ -314,6 +326,7 @@ private:
 	}
 };
 
+}
 }
 
 #endif

@@ -1,10 +1,14 @@
-#ifndef LIBACTION_COCO_PARTS_HPP_
-#define LIBACTION_COCO_PARTS_HPP_
+#ifndef LIBACTION_MULTI_COCO_PARTS_HPP_
+#define LIBACTION_MULTI_COCO_PARTS_HPP_
+
+#include "../body_part.hpp"
 
 #include <array>
 #include <utility>
 
 namespace libaction
+{
+namespace multi
 {
 namespace coco_parts
 {
@@ -12,24 +16,25 @@ namespace coco_parts
 enum class Part
 {
 	nose = 0,
-	neck = 1,
-	shoulder_r = 2,
-	elbow_r = 3,
-	wrist_r = 4,
-	shoulder_l = 5,
-	elbow_l = 6,
-	wrist_l = 7,
-	hip_r = 8,
-	knee_r = 9,
-	ankle_r = 10,
-	hip_l = 11,
-	knee_l = 12,
-	ankle_l = 13,
-	eye_r = 14,
-	eye_l = 15,
-	ear_r = 16,
-	ear_l = 17,
-	background = 18
+	neck,
+	shoulder_r,
+	elbow_r,
+	wrist_r,
+	shoulder_l,
+	elbow_l,
+	wrist_l,
+	hip_r,
+	knee_r,
+	ankle_r,
+	hip_l,
+	knee_l,
+	ankle_l,
+	eye_r,
+	eye_l,
+	ear_r,
+	ear_l,
+	background,
+	end
 };
 
 inline constexpr std::array<std::pair<size_t, size_t>, 19> pairs()
@@ -56,6 +61,14 @@ inline constexpr std::array<std::pair<size_t, size_t>, 19> pairs_network()
 		std::make_pair(26, 27)};
 }
 
+inline libaction::BodyPart::PartIndex to_libaction_part_index(Part part)
+{
+	if (static_cast<int>(part) >= static_cast<int>(Part::end))
+		return libaction::BodyPart::PartIndex::end;
+	return static_cast<libaction::BodyPart::PartIndex>(static_cast<int>(part));
+}
+
+}
 }
 }
 
