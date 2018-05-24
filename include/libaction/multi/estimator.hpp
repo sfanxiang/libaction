@@ -42,13 +42,8 @@ class ErrorReporter: public tflite::ErrorReporter
 template<typename Value>
 class Estimator
 {
-public:
-	inline Estimator(
-		const std::string &graph_path, int num_threads,
-		size_t height, size_t width, size_t channels) :
-	model_height(height), model_width(width), model_channels(channels),
-	model(tflite::FlatBufferModel::BuildFromFile(
-		graph_path.c_str(), &error_reporter))
+private:
+	inline void initialize(int threads)
 	{
 		if (model_height < 8 || model_width < 8 || model_channels == 0)
 			throw std::runtime_error("invalid model parameters");
@@ -61,11 +56,35 @@ public:
 		if (!interpreter)
 			throw std::runtime_error("failed to build interpreter");
 
-		if (num_threads > 0)
-			interpreter->SetNumThreads(num_threads);
+		if (threads > 0)
+			interpreter->SetNumThreads(threads);
 
 		if (interpreter->AllocateTensors() != kTfLiteOk)
 			throw std::runtime_error("AllocateTensors failed");
+	}
+
+public:
+	// Construct from a file.
+	inline Estimator(
+		const std::string &graph_path, int threads,
+		size_t height, size_t width, size_t channels) :
+	model_height(height), model_width(width), model_channels(channels),
+	model(tflite::FlatBufferModel::BuildFromFile(
+		graph_path.c_str(), &error_reporter))
+	{
+		initialize(threads);
+	}
+
+	// Construct from a buffer. The ownership of the buffer is not transferred
+	// and it should remain valid until Estimator is destroyed.
+	inline Estimator(
+		const char *graph_buffer, size_t buffer_size, int threads,
+		size_t height, size_t width, size_t channels) :
+	model_height(height), model_width(width), model_channels(channels),
+	model(tflite::FlatBufferModel::BuildFromBuffer(
+		graph_buffer, buffer_size, &error_reporter))
+	{
+		initialize(threads);
 	}
 
 	template<typename Image>
