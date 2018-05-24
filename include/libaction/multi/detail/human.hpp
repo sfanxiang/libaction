@@ -1,5 +1,5 @@
-#ifndef LIBACTION_MULTI_HUMAN_HPP_
-#define LIBACTION_MULTI_HUMAN_HPP_
+#ifndef LIBACTION_MULTI_DETAIL_HUMAN_HPP_
+#define LIBACTION_MULTI_DETAIL_HUMAN_HPP_
 
 #include "body_part.hpp"
 #include "part_pair.hpp"
@@ -12,6 +12,8 @@
 namespace libaction
 {
 namespace multi
+{
+namespace detail
 {
 
 class Human
@@ -89,6 +91,7 @@ private:
 	}
 };
 
+}
 }
 }
 

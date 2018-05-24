@@ -1,2 +1,4 @@
-install_headers('estimator.hpp', 'posenet_parts.hpp',
+install_headers('estimator.hpp',
                 subdir : 'libaction/single')
+
+subdir('detail')

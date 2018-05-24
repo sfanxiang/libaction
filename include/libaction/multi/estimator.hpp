@@ -5,9 +5,9 @@
 #include "../body_part.hpp"
 #include "../human.hpp"
 #include "../image.hpp"
-#include "coco_parts.hpp"
-#include "human.hpp"
-#include "part_pair.hpp"
+#include "detail/coco_parts.hpp"
+#include "detail/human.hpp"
+#include "detail/part_pair.hpp"
 
 #include <boost/multi_array.hpp>
 #include <tensorflow/contrib/lite/kernels/register.h>
@@ -125,9 +125,9 @@ public:
 			coords.push_back(std::move(coord));
 		}
 
-		std::vector<PartPair> pairs_by_conn;
-		auto coco_pairs = coco_parts::pairs();
-		auto coco_pairs_network = coco_parts::pairs_network();
+		std::vector<detail::PartPair> pairs_by_conn;
+		auto coco_pairs = detail::coco_parts::pairs();
+		auto coco_pairs_network = detail::coco_parts::pairs_network();
 		for (size_t i = 0; i < std::min(coco_pairs.size(), coco_pairs_network.size()); i++) {
 			auto part_idx1 = coco_pairs[i].first;
 			auto part_idx2 = coco_pairs[i].second;
@@ -144,9 +144,10 @@ public:
 			pairs_by_conn.insert(pairs_by_conn.end(), pairs->begin(), pairs->end());
 		}
 
-		auto humans = std::unique_ptr<std::list<Human>>(new std::list<Human>());
+		auto humans = std::unique_ptr<std::list<detail::Human>>(
+			new std::list<detail::Human>());
 		for (auto &pair: pairs_by_conn)
-			humans->push_back(Human(std::array<PartPair, 1>{pair}));
+			humans->push_back(detail::Human(std::array<detail::PartPair, 1>{pair}));
 
 		for (auto i = humans->begin(); i != humans->end(); ) {
 			bool merged = false;
@@ -177,8 +178,9 @@ public:
 			std::list<libaction::BodyPart> parts;
 			for (auto &y: x.get_body_parts()) {
 				parts.push_back(libaction::BodyPart(
-					coco_parts::to_libaction_part_index(
-						static_cast<coco_parts::Part>(y.second.part_idx())),
+					detail::coco_parts::to_libaction_part_index(
+						static_cast<detail::coco_parts::Part>(
+							y.second.part_idx())),
 					y.second.x(), y.second.y(), y.second.score()));
 			}
 			res_humans->push_back(libaction::Human(parts));
@@ -215,7 +217,7 @@ private:
 	}
 
 	template<typename PafMatX, typename PafMatY, typename Heatmap>
-	std::unique_ptr<std::vector<PartPair>> score_pairs(
+	std::unique_ptr<std::vector<detail::PartPair>> score_pairs(
 		size_t part_idx1, size_t part_idx2,
 		const std::vector<std::pair<size_t, size_t>> &coord_list1,
 		const std::vector<std::pair<size_t, size_t>> &coord_list2,
@@ -227,7 +229,7 @@ private:
 				heatmap.num_dimensions() != 3)
 			throw std::runtime_error("wrong number of dimensions");
 
-		std::vector<PartPair> connection_temp;
+		std::vector<detail::PartPair> connection_temp;
 
 		size_t idx1 = 0;
 		for (auto coord1 = coord_list1.begin();
@@ -255,7 +257,7 @@ private:
 						heatmap.shape()[2] <= y1 || heatmap.shape()[2] <= y2)
 					throw std::runtime_error("out of bound");
 
-				connection_temp.push_back(PartPair(
+				connection_temp.push_back(detail::PartPair(
 					score,
 					part_idx1, part_idx2,
 					idx1, idx2,
@@ -268,11 +270,11 @@ private:
 		}
 
 		std::sort(connection_temp.begin(), connection_temp.end(),
-			[] (const PartPair &x, const PartPair &y)
+			[] (const detail::PartPair &x, const detail::PartPair &y)
 			{ return x.score() > y.score(); });
 
-		auto connection = std::unique_ptr<std::vector<PartPair>>(
-			new std::vector<PartPair>());
+		auto connection = std::unique_ptr<std::vector<detail::PartPair>>(
+			new std::vector<detail::PartPair>());
 		std::set<size_t> used_idx1, used_idx2;
 		for (auto &candidate: connection_temp) {
 			if (used_idx1.find(candidate.idx1()) != used_idx1.end() ||

@@ -1,9 +1,11 @@
-#ifndef LIBACTION_MULTI_BODY_PART_HPP_
-#define LIBACTION_MULTI_BODY_PART_HPP_
+#ifndef LIBACTION_MULTI_DETAIL_BODY_PART_HPP_
+#define LIBACTION_MULTI_DETAIL_BODY_PART_HPP_
 
 namespace libaction
 {
 namespace multi
+{
+namespace detail
 {
 
 class BodyPart
@@ -26,6 +28,7 @@ private:
 	float x_{}, y_{}, score_{};
 };
 
+}
 }
 }
 

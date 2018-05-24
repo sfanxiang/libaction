@@ -5,7 +5,7 @@
 #include "../body_part.hpp"
 #include "../human.hpp"
 #include "../image.hpp"
-#include "posenet_parts.hpp"
+#include "detail/posenet_parts.hpp"
 
 #include <boost/multi_array.hpp>
 #include <tensorflow/contrib/lite/kernels/register.h>
@@ -108,8 +108,8 @@ public:
 		for (size_t i = 0; i < keypoints_size; i++) {
 			if ((*scores)[i] >= part_score_threshold) {
 				parts.push_back(libaction::BodyPart(
-					posenet_parts::to_libaction_part_index(
-						static_cast<posenet_parts::Part>(i)),
+					detail::posenet_parts::to_libaction_part_index(
+						static_cast<detail::posenet_parts::Part>(i)),
 					(*points)[i].first,
 					(*points)[i].second,
 					(*scores)[i]

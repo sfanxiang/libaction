@@ -1,7 +1,7 @@
-#ifndef LIBACTION_SINGLE_POSENET_PARTS_HPP_
-#define LIBACTION_SINGLE_POSENET_PARTS_HPP_
+#ifndef LIBACTION_SINGLE_DETAIL_POSENET_PARTS_HPP_
+#define LIBACTION_SINGLE_DETAIL_POSENET_PARTS_HPP_
 
-#include "../body_part.hpp"
+#include "../../body_part.hpp"
 
 #include <array>
 #include <utility>
@@ -9,6 +9,8 @@
 namespace libaction
 {
 namespace single
+{
+namespace detail
 {
 namespace posenet_parts
 {
@@ -50,6 +52,7 @@ inline libaction::BodyPart::PartIndex to_libaction_part_index(Part part)
 	}[static_cast<int>(part)];
 }
 
+}
 }
 }
 }

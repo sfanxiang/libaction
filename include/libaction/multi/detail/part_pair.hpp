@@ -1,11 +1,13 @@
-#ifndef LIBACTION_MULTI_PART_PAIR_HPP_
-#define LIBACTION_MULTI_PART_PAIR_HPP_
+#ifndef LIBACTION_MULTI_DETAIL_PART_PAIR_HPP_
+#define LIBACTION_MULTI_DETAIL_PART_PAIR_HPP_
 
 #include <utility>
 
 namespace libaction
 {
 namespace multi
+{
+namespace detail
 {
 
 class PartPair
@@ -39,6 +41,7 @@ private:
 	float score1_{}, score2_{};
 };
 
+}
 }
 }
 

@@ -1,7 +1,7 @@
-#ifndef LIBACTION_MULTI_COCO_PARTS_HPP_
-#define LIBACTION_MULTI_COCO_PARTS_HPP_
+#ifndef LIBACTION_MULTI_DETAIL_COCO_PARTS_HPP_
+#define LIBACTION_MULTI_DETAIL_COCO_PARTS_HPP_
 
-#include "../body_part.hpp"
+#include "../../body_part.hpp"
 
 #include <array>
 #include <utility>
@@ -9,6 +9,8 @@
 namespace libaction
 {
 namespace multi
+{
+namespace detail
 {
 namespace coco_parts
 {
@@ -68,6 +70,7 @@ inline libaction::BodyPart::PartIndex to_libaction_part_index(Part part)
 	return static_cast<libaction::BodyPart::PartIndex>(static_cast<int>(part));
 }
 
+}
 }
 }
 }

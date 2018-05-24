@@ -1,3 +1,4 @@
-install_headers('body_part.hpp', 'coco_parts.hpp', 'estimator.hpp', 'human.hpp',
-                'part_pair.hpp',
+install_headers('estimator.hpp',
                 subdir : 'libaction/multi')
+
+subdir('detail')
