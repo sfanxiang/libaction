@@ -37,10 +37,12 @@ class ErrorReporter: public tflite::ErrorReporter
 };
 }
 
+/// Single-person pose estimator.
 template<typename Value>
 class Estimator
 {
 private:
+	/// Initialize the class and do error checks.
 	inline void initialize(int threads)
 	{
 		if (model_height < 8 || model_width < 8 || model_channels == 0
@@ -64,7 +66,14 @@ private:
 	}
 
 public:
-	// Construct from a file.
+	/// Construct from a file.
+
+	/// @param[in]  graph_path  The path to the graph file.
+	/// @param[in]  threads     Threads used when invoking the model, or 0 for
+	///                         default.
+	/// @param[in]  height      The height of the model.
+	/// @param[in]  width       The width of the model.
+	/// @param[in]  channels    The number of color channels, usually 3.
 	inline Estimator(
 		const std::string &graph_path, int threads,
 		size_t height, size_t width, size_t channels) :
@@ -75,8 +84,17 @@ public:
 		initialize(threads);
 	}
 
-	// Construct from a buffer. The ownership of the buffer is not transferred
-	// and it should remain valid until Estimator is destroyed.
+	/// Construct from a buffer.
+
+	/// @param[in]  graph_buffer The buffer containing the graph. The ownership
+	///                          of the buffer is not transferred and it should
+	///                          remain valid until Estimator is destroyed.
+	/// @param[in]  buffer_size The size of the buffer.
+	/// @param[in]  threads     Threads used when invoking the model, or 0 for
+	///                         default.
+	/// @param[in]  height      The height of the model.
+	/// @param[in]  width       The width of the model.
+	/// @param[in]  channels    The number of color channels, usually 3.
 	inline Estimator(
 		const char *graph_buffer, size_t buffer_size, int threads,
 		size_t height, size_t width, size_t channels) :
@@ -87,6 +105,10 @@ public:
 		initialize(threads);
 	}
 
+	/// Estimate from an image.
+
+	/// @param[in]  image       The image to infer from.
+	/// @return                 A list of humans inferred from the image.
 	template<typename Image>
 	inline std::unique_ptr<std::list<libaction::Human>> estimate(
 		const Image &image)
