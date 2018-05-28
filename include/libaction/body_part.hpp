@@ -34,7 +34,7 @@ public:
 
 	/// Construct with empty values.
 
-	/// `part_index` is initialized to `PartIndex::end`. `x`, `y`, and `score`
+	/// `part_index` is initialized to PartIndex::end. `x`, `y`, and `score`
 	/// are initialized to 0.
 	inline BodyPart() {}
 

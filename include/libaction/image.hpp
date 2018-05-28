@@ -8,9 +8,19 @@
 
 namespace libaction
 {
+/// Image manipulation utilities.
 namespace image
 {
 
+/// Resize an image.
+
+/// @param[in]  image       The input image conforming to the Boost.MultiArray
+///                         concept. The image must have 3 non-empty
+///                         dimensions of height, width, and channels.
+/// @param[in]  target_height   The target height (>0).
+/// @param[in]  target_width    The target width (>0).
+/// @return                 The resized image.
+/// @exception              std::runtime_error
 // TODO: Resize is the second bottleneck. Optimize this function.
 template<typename Input>
 std::unique_ptr<boost::multi_array<typename Input::element, 3>> resize(

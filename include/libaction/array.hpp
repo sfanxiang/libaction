@@ -1,6 +1,7 @@
 #ifndef LIBACTION_ARRAY_HPP_
 #define LIBACTION_ARRAY_HPP_
 
+#include <boost/multi_array.hpp>
 #include <algorithm>
 #include <memory>
 #include <queue>
@@ -10,6 +11,7 @@
 
 namespace libaction
 {
+/// Array utilities.
 namespace array
 {
 

@@ -27,9 +27,9 @@ public:
 		}
 	}
 
-	inline const std::map<coco_parts::Part, BodyPart> &get_body_parts() const
+	inline const std::map<coco_parts::Part, BodyPart> &body_parts() const
 	{
-		return body_parts;
+		return body_parts_;
 	}
 
 	inline bool is_connected(const Human &other) const
@@ -47,8 +47,8 @@ public:
 
 	inline void merge(const Human &other)
 	{
-		for (auto &part: other.body_parts) {
-			body_parts[part.first] = part.second;
+		for (auto &part: other.body_parts_) {
+			body_parts_[part.first] = part.second;
 		}
 		for (auto &uidx: other.uidx_set) {
 			uidx_set.insert(uidx);
@@ -57,13 +57,13 @@ public:
 
 	inline size_t part_count() const
 	{
-		return body_parts.size();
+		return body_parts_.size();
 	}
 
 	inline float max_score() const
 	{
 		float max = 0.0f;
-		for (auto &x: body_parts) {
+		for (auto &x: body_parts_) {
 			if (x.second.score() > max)
 				max = x.second.score();
 		}
@@ -72,7 +72,7 @@ public:
 
 private:
 	std::set<std::pair<size_t, size_t>> uidx_set{};	// part_idx, idx
-	std::map<coco_parts::Part, BodyPart> body_parts{};
+	std::map<coco_parts::Part, BodyPart> body_parts_{};
 
 	inline void add_pair(const PartPair &pair)
 	{
@@ -80,10 +80,10 @@ private:
 				pair.part_idx2() >= static_cast<size_t>(coco_parts::Part::end))
 			return;
 
-		body_parts[static_cast<coco_parts::Part>(pair.part_idx1())] =
+		body_parts_[static_cast<coco_parts::Part>(pair.part_idx1())] =
 			BodyPart(pair.part_idx1(), pair.coord1().first,
 				pair.coord1().second, pair.score());
-		body_parts[static_cast<coco_parts::Part>(pair.part_idx2())] =
+		body_parts_[static_cast<coco_parts::Part>(pair.part_idx2())] =
 			BodyPart(pair.part_idx2(), pair.coord2().first,
 				pair.coord2().second, pair.score());
 		uidx_set.insert(std::make_pair(pair.part_idx1(), pair.idx1()));

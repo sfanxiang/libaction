@@ -9,7 +9,9 @@
 #include <memory>
 #include <stdexcept>
 
-std::unique_ptr<boost::multi_array<uint8_t, 3>> read_image(
+/// @example action.cpp
+
+static std::unique_ptr<boost::multi_array<uint8_t, 3>> read_image(
 	const std::string &file, size_t height, size_t width, size_t channels)
 {
 	std::ifstream f(file, f.binary);
@@ -44,7 +46,7 @@ int main()
 			auto humans = estimator.estimate(*image);
 
 			for (auto &human: *humans) {
-				auto &body_parts = human.get_body_parts();
+				auto &body_parts = human.body_parts();
 				for (auto &part: body_parts) {
 					std::cout << static_cast<int>(part.first) << ": "
 						<< part.second.x() * im[0] << ","

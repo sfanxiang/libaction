@@ -38,6 +38,9 @@ class ErrorReporter: public tflite::ErrorReporter
 }
 
 /// Single-person pose estimator.
+
+/// @tparam     Value       The input value type specific to the model, usually
+///                         `float`.
 template<typename Value>
 class Estimator
 {
@@ -74,6 +77,7 @@ public:
 	/// @param[in]  height      The height of the model.
 	/// @param[in]  width       The width of the model.
 	/// @param[in]  channels    The number of color channels, usually 3.
+	/// @exception              std::runtime_error
 	inline Estimator(
 		const std::string &graph_path, int threads,
 		size_t height, size_t width, size_t channels) :
@@ -95,6 +99,7 @@ public:
 	/// @param[in]  height      The height of the model.
 	/// @param[in]  width       The width of the model.
 	/// @param[in]  channels    The number of color channels, usually 3.
+	/// @exception              std::runtime_error
 	inline Estimator(
 		const char *graph_buffer, size_t buffer_size, int threads,
 		size_t height, size_t width, size_t channels) :
@@ -107,8 +112,14 @@ public:
 
 	/// Estimate from an image.
 
-	/// @param[in]  image       The image to infer from.
+	/// @param[in]  image       The input image conforming to the
+	///                         Boost.MultiArray concept. The image must have 3
+	///                         non-empty dimensions of height, width, and
+	///                         channels. The image will be automatically
+	///                         resized to match the model height and width.
 	/// @return                 A list of humans inferred from the image.
+	/// @exception              std::runtime_error
+	/// @sa                     libaction::image::resize()
 	template<typename Image>
 	inline std::unique_ptr<std::list<libaction::Human>> estimate(
 		const Image &image)

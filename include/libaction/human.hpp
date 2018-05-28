@@ -8,24 +8,33 @@
 namespace libaction
 {
 
+/// Describe a human pose.
 class Human
 {
 public:
+	/// Construct from a list of BodyPart.
+
+	/// @param[in]  parts       An iterable representing a list of BodyPart.
 	template<typename Parts>
-	Human(const Parts &p)
+	Human(const Parts &parts)
 	{
-		for (auto &part: p) {
-			body_parts[part.part_index()] = part;
+		for (auto &part: parts) {
+			body_parts_[part.part_index()] = part;
 		}
 	}
 
-	inline const std::map<BodyPart::PartIndex, BodyPart> &get_body_parts() const
+	/// Body parts.
+
+	/// @return                 A map from part index to its respective body
+	///                         part.
+	/// @sa                     BodyPart::PartIndex and BodyPart
+	inline const std::map<BodyPart::PartIndex, BodyPart> &body_parts() const
 	{
-		return body_parts;
+		return body_parts_;
 	}
 
 private:
-	std::map<BodyPart::PartIndex, BodyPart> body_parts{};
+	std::map<BodyPart::PartIndex, BodyPart> body_parts_{};
 };
 
 }
