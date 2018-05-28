@@ -42,7 +42,7 @@ template<typename Value>
 class Estimator
 {
 private:
-	/// Initialize the class and do error checks.
+	/// Initialize the class and check for error.
 	inline void initialize(int threads)
 	{
 		if (model_height < 8 || model_width < 8 || model_channels == 0

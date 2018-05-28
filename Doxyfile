@@ -5,13 +5,12 @@ PROJECT_NUMBER         = 1.0
 PROJECT_BRIEF          =
 PROJECT_LOGO           =
 
-INPUT                  = include
-FILE_PATTERNS          = *.cpp *.hpp
+INPUT                  = include README.md
+FILE_PATTERNS          = *.hpp *.md
 RECURSIVE              = YES
+STRIP_FROM_INC_PATH    = include
 EXCLUDE_PATTERNS       = */detail/*
+USE_MDFILE_AS_MAINPAGE = README.md
 
 OUTPUT_DIRECTORY       =
 OUTPUT_LANGUAGE        = English
-
-GENERATE_HTML          = YES
-GENERATE_LATEX         = NO

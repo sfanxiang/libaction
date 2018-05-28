@@ -4,9 +4,11 @@
 namespace libaction
 {
 
+/// Describe a keypoint of the human body.
 class BodyPart
 {
 public:
+	/// Enumeration of body parts.
 	enum class PartIndex
 	{
 		nose = 0,
@@ -30,16 +32,41 @@ public:
 		end
 	};
 
+	/// Construct with empty values.
+
+	/// `part_index` is initialized to `PartIndex::end`. `x`, `y`, and `score`
+	/// are initialized to 0.
 	inline BodyPart() {}
 
+	/// Construct from arguments.
+
+	/// @param[in]  part_index  Index of the body part.
+	/// @param[in]  x           X-coordinate (top-down).
+	/// @param[in]  y           Y-coordinate (left-right).
+	/// @param[in]  score       Confidence of the estimation.
 	inline BodyPart(PartIndex part_index, float x, float y, float score)
 	:
 	part_index_(part_index), x_(x), y_(y), score_(score)
 	{}
 
+	/// Index of the body part.
+
+	/// @return                 Index of the body part.
 	inline PartIndex part_index() const { return part_index_; }
+
+	/// X-coordinate (top-down).
+
+	/// @return                 X-coordinate (top-down).
 	inline float x() const { return x_; }
+
+	/// Y-coordinate (left-right).
+
+	/// @return                 Y-coordinate (left-right).
 	inline float y() const { return y_; }
+
+	/// Confidence of the estimation.
+
+	/// @return                 Confidence of the estimation.
 	inline float score() const { return score_; }
 
 private:
