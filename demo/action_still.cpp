@@ -9,7 +9,7 @@
 #include <memory>
 #include <stdexcept>
 
-/// @example action.cpp
+/// @example action_still.cpp
 
 static std::unique_ptr<boost::multi_array<uint8_t, 3>> read_image(
 	const std::string &file, size_t height, size_t width, size_t channels)
