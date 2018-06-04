@@ -21,8 +21,8 @@ for root, dirs, files in os.walk('include'):
             # remove old guards
             if content and content[-1] == '':
                 content = content[:-1]
-            if len(content) >= 5 and content[0].startswith('#ifndef') and \
-                    content[1].startswith('#define') and \
+            if len(content) >= 5 and content[0].startswith('#ifndef ') and \
+                    content[1].startswith('#define ') and \
                     content[2] == '' and \
                     content[-2] == '' and \
                     content[-1] == '#endif':
