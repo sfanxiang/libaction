@@ -1,13 +1,13 @@
-#ifndef LIBACTION_MULTI_ESTIMATOR_HPP_
-#define LIBACTION_MULTI_ESTIMATOR_HPP_
+#ifndef LIBACTION__STILL__MULTI__ESTIMATOR_HPP_
+#define LIBACTION__STILL__MULTI__ESTIMATOR_HPP_
 
-#include "../array.hpp"
-#include "../body_part.hpp"
-#include "../human.hpp"
-#include "../image.hpp"
 #include "detail/coco_parts.hpp"
 #include "detail/human.hpp"
 #include "detail/part_pair.hpp"
+#include "libaction/body_part.hpp"
+#include "libaction/still/human.hpp"
+#include "libaction/still/detail/array.hpp"
+#include "libaction/still/detail/image.hpp"
 
 #include <boost/multi_array.hpp>
 #include <tensorflow/contrib/lite/kernels/register.h>
@@ -23,6 +23,8 @@
 #include <string>
 
 namespace libaction
+{
+namespace still
 {
 namespace multi
 {
@@ -119,11 +121,13 @@ public:
 	///                         resized to match the model height and width.
 	/// @return                 A list of humans inferred from the image.
 	/// @exception              std::runtime_error
-	/// @sa                     libaction::image::resize()
 	template<typename Image>
-	inline std::unique_ptr<std::list<libaction::Human>> estimate(
+	inline std::unique_ptr<std::list<libaction::still::Human>> estimate(
 		const Image &image)
 	{
+		namespace libaction_array = libaction::still::detail::array;
+		namespace libaction_image = libaction::still::detail::image;
+
 		if (image.num_dimensions() != 3)
 			throw std::runtime_error("wrong number of dimensions");
 
@@ -136,7 +140,8 @@ public:
 		if (height == 0 || width == 0)
 			throw std::runtime_error("invalid image parameters");
 
-		auto resized_image = image::resize(image, model_height, model_width);
+		auto resized_image = libaction_image::resize(
+			image, model_height, model_width);
 
 		std::copy(resized_image->data(),
 			resized_image->data() + resized_image->num_elements(),
@@ -171,9 +176,9 @@ public:
 		std::vector<std::unique_ptr<std::vector<std::pair<size_t, size_t>>>>
 			coords;
 		for (size_t i = 0; i < heat_mat.shape()[0] - 1; i++) {
-			auto s1 = array::suppress_threshold(heat_mat[i], nms_threshold);
-			auto s2 = array::suppress_non_max(*s1, nms_window, nms_window);
-			auto coord = array::where_not_less(*s2, nms_threshold);
+			auto s1 = libaction_array::suppress_threshold(heat_mat[i], nms_threshold);
+			auto s2 = libaction_array::suppress_non_max(*s1, nms_window, nms_window);
+			auto coord = libaction_array::where_not_less(*s2, nms_threshold);
 			coords.push_back(std::move(coord));
 		}
 
@@ -224,8 +229,8 @@ public:
 				++i;
 		}
 
-		auto res_humans = std::unique_ptr<std::list<libaction::Human>>(
-			new std::list<libaction::Human>());
+		auto res_humans = std::unique_ptr<std::list<libaction::still::Human>>(
+			new std::list<libaction::still::Human>());
 		for (auto &x: *humans) {
 			std::list<libaction::BodyPart> parts;
 			for (auto &y: x.body_parts()) {
@@ -235,7 +240,7 @@ public:
 							y.second.part_idx())),
 					y.second.x(), y.second.y(), y.second.score()));
 			}
-			res_humans->push_back(libaction::Human(parts));
+			res_humans->push_back(libaction::still::Human(parts));
 		}
 
 		return res_humans;
@@ -380,6 +385,7 @@ private:
 	}
 };
 
+}
 }
 }
 

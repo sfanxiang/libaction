@@ -1,5 +1,5 @@
-#ifndef LIBACTION_MULTI_DETAIL_HUMAN_HPP_
-#define LIBACTION_MULTI_DETAIL_HUMAN_HPP_
+#ifndef LIBACTION__STILL__MULTI__DETAIL__HUMAN_HPP_
+#define LIBACTION__STILL__MULTI__DETAIL__HUMAN_HPP_
 
 #include "body_part.hpp"
 #include "part_pair.hpp"
@@ -10,6 +10,8 @@
 #include <vector>
 
 namespace libaction
+{
+namespace still
 {
 namespace multi
 {
@@ -91,6 +93,7 @@ private:
 	}
 };
 
+}
 }
 }
 }

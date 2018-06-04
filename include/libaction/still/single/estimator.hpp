@@ -1,11 +1,11 @@
-#ifndef LIBACTION_SINGLE_ESTIMATOR_HPP_
-#define LIBACTION_SINGLE_ESTIMATOR_HPP_
+#ifndef LIBACTION__STILL__SINGLE__ESTIMATOR_HPP_
+#define LIBACTION__STILL__SINGLE__ESTIMATOR_HPP_
 
-#include "../array.hpp"
-#include "../body_part.hpp"
-#include "../human.hpp"
-#include "../image.hpp"
 #include "detail/posenet_parts.hpp"
+#include "libaction/body_part.hpp"
+#include "libaction/still/human.hpp"
+#include "libaction/still/detail/array.hpp"
+#include "libaction/still/detail/image.hpp"
 
 #include <boost/multi_array.hpp>
 #include <tensorflow/contrib/lite/kernels/register.h>
@@ -21,6 +21,8 @@
 #include <string>
 
 namespace libaction
+{
+namespace still
 {
 namespace single
 {
@@ -119,11 +121,13 @@ public:
 	///                         resized to match the model height and width.
 	/// @return                 A list of humans inferred from the image.
 	/// @exception              std::runtime_error
-	/// @sa                     libaction::image::resize()
 	template<typename Image>
-	inline std::unique_ptr<std::list<libaction::Human>> estimate(
+	inline std::unique_ptr<std::list<libaction::still::Human>> estimate(
 		const Image &image)
 	{
+		namespace libaction_array = libaction::still::detail::array;
+		namespace libaction_image = libaction::still::detail::image;
+
 		if (image.num_dimensions() != 3)
 			throw std::runtime_error("wrong number of dimensions");
 
@@ -136,8 +140,8 @@ public:
 		if (height == 0 || width == 0)
 			throw std::runtime_error("invalid image parameters");
 
-		auto resized_image = image::resize(image,
-			model_height + 1, model_width + 1);
+		auto resized_image = libaction_image::resize(
+			image, model_height + 1, model_width + 1);
 
 		std::copy(resized_image->data(),
 			resized_image->data() + resized_image->num_elements(),
@@ -151,7 +155,7 @@ public:
 		boost::multi_array_ref<float, 3> offsets(get_output(1),
 			boost::extents[model_height / output_stride + 1][model_width / output_stride + 1][keypoints_size * 2]);
 
-		auto heatmap_coords = array::argmax_2d(heatmap_scores);
+		auto heatmap_coords = libaction_array::argmax_2d(heatmap_scores);
 
 		auto points = get_offset_points(*heatmap_coords, offsets);
 		auto scores = get_points_confidence(heatmap_scores, *heatmap_coords);
@@ -169,10 +173,10 @@ public:
 			}
 		}
 
-		auto humans = std::unique_ptr<std::list<libaction::Human>>(
-			new std::list<libaction::Human>());
+		auto humans = std::unique_ptr<std::list<libaction::still::Human>>(
+			new std::list<libaction::still::Human>());
 		if (parts.size() >= part_count_threshold)
-			humans->push_back(libaction::Human(parts));
+			humans->push_back(libaction::still::Human(parts));
 
 		return humans;
 	}
@@ -247,6 +251,7 @@ private:
 	}
 };
 
+}
 }
 }
 

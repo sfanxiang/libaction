@@ -1,5 +1,5 @@
-#ifndef LIBACTION_ARRAY_HPP_
-#define LIBACTION_ARRAY_HPP_
+#ifndef LIBACTION__STILL__DETAIL__ARRAY_HPP_
+#define LIBACTION__STILL__DETAIL__ARRAY_HPP_
 
 #include <boost/multi_array.hpp>
 #include <algorithm>
@@ -10,6 +10,10 @@
 #include <vector>
 
 namespace libaction
+{
+namespace still
+{
+namespace detail
 {
 /// Array utilities.
 namespace array
@@ -214,6 +218,8 @@ std::unique_ptr<std::vector<std::pair<size_t, size_t>>> argmax_2d(
 	return res;
 }
 
+}
+}
 }
 }
 

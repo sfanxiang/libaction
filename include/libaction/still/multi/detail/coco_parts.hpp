@@ -1,12 +1,14 @@
-#ifndef LIBACTION_MULTI_DETAIL_COCO_PARTS_HPP_
-#define LIBACTION_MULTI_DETAIL_COCO_PARTS_HPP_
+#ifndef LIBACTION__STILL__MULTI__DETAIL__COCO_PARTS_HPP_
+#define LIBACTION__STILL__MULTI__DETAIL__COCO_PARTS_HPP_
 
-#include "../../body_part.hpp"
+#include "libaction/body_part.hpp"
 
 #include <array>
 #include <utility>
 
 namespace libaction
+{
+namespace still
 {
 namespace multi
 {
@@ -70,6 +72,7 @@ inline libaction::BodyPart::PartIndex to_libaction_part_index(Part part)
 	return static_cast<libaction::BodyPart::PartIndex>(static_cast<int>(part));
 }
 
+}
 }
 }
 }

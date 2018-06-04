@@ -1,5 +1,5 @@
-#ifndef LIBACTION_BODY_PART_HPP_
-#define LIBACTION_BODY_PART_HPP_
+#ifndef LIBACTION__BODY_PART_HPP_
+#define LIBACTION__BODY_PART_HPP_
 
 namespace libaction
 {

@@ -1,9 +1,11 @@
-#ifndef LIBACTION_MULTI_DETAIL_PART_PAIR_HPP_
-#define LIBACTION_MULTI_DETAIL_PART_PAIR_HPP_
+#ifndef LIBACTION__STILL__MULTI__DETAIL__PART_PAIR_HPP_
+#define LIBACTION__STILL__MULTI__DETAIL__PART_PAIR_HPP_
 
 #include <utility>
 
 namespace libaction
+{
+namespace still
 {
 namespace multi
 {
@@ -41,6 +43,7 @@ private:
 	float score1_{}, score2_{};
 };
 
+}
 }
 }
 }

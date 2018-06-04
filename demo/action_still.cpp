@@ -1,7 +1,7 @@
 #include <boost/multi_array.hpp>
-#include <libaction/human.hpp>
-#include <libaction/multi/estimator.hpp>
-#include <libaction/single/estimator.hpp>
+#include <libaction/still/human.hpp>
+#include <libaction/still/multi/estimator.hpp>
+#include <libaction/still/single/estimator.hpp>
 #include <chrono>
 #include <cstdlib>
 #include <fstream>
@@ -34,8 +34,8 @@ int main()
 	const size_t height = 224, width = 128, channels = 3;
 
 	try {
-		libaction::single::Estimator<float> estimator("posenet_tflite.tflite",
-			0, height, width, channels);
+		libaction::still::single::Estimator<float> estimator(
+			"posenet_tflite.tflite", 0, height, width, channels);
 
 		const size_t im[] = {232, 217, 3};
 		auto image = read_image("p1.raw", im[0], im[1], im[2]);

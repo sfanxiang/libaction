@@ -1,11 +1,13 @@
-#ifndef LIBACTION_HUMAN_HPP_
-#define LIBACTION_HUMAN_HPP_
+#ifndef LIBACTION__STILL__HUMAN_HPP_
+#define LIBACTION__STILL__HUMAN_HPP_
 
-#include "body_part.hpp"
+#include "libaction/body_part.hpp"
 
 #include <map>
 
 namespace libaction
+{
+namespace still
 {
 
 /// Describe a human pose.
@@ -37,6 +39,7 @@ private:
 	std::map<BodyPart::PartIndex, BodyPart> body_parts_{};
 };
 
+}
 }
 
 #endif

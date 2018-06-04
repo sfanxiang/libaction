@@ -1,5 +1,5 @@
-#ifndef LIBACTION_IMAGE_HPP_
-#define LIBACTION_IMAGE_HPP_
+#ifndef LIBACTION__STILL__DETAIL__IMAGE_HPP_
+#define LIBACTION__STILL__DETAIL__IMAGE_HPP_
 
 #include <boost/multi_array.hpp>
 #include <cstdint>
@@ -7,6 +7,10 @@
 #include <stdexcept>
 
 namespace libaction
+{
+namespace still
+{
+namespace detail
 {
 /// Image manipulation utilities.
 namespace image
@@ -82,6 +86,8 @@ std::unique_ptr<boost::multi_array<typename Input::element, 3>> resize(
 	return target_image;
 }
 
+}
+}
 }
 }
 
