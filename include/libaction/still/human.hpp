@@ -3,7 +3,7 @@
 
 #include "libaction/body_part.hpp"
 
-#include <map>
+#include <unordered_map>
 
 namespace libaction
 {
@@ -27,16 +27,17 @@ public:
 
 	/// Body parts.
 
-	/// @return                 A map from part index to its respective body
-	///                         part.
+	/// @return                 An unordered map mapping part index to its
+	///                         respective body part.
 	/// @sa                     BodyPart::PartIndex and BodyPart
-	inline const std::map<BodyPart::PartIndex, BodyPart> &body_parts() const
+	inline const std::unordered_map<BodyPart::PartIndex, BodyPart> &body_parts()
+	const
 	{
 		return body_parts_;
 	}
 
 private:
-	std::map<BodyPart::PartIndex, BodyPart> body_parts_{};
+	std::unordered_map<BodyPart::PartIndex, BodyPart> body_parts_{};
 };
 
 }
