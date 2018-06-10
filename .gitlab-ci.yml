@@ -1,12 +1,31 @@
 build:
   stage: build
   script:
+  # fetch stuff
   - apt-get update -qq && apt-get install -y -qq doxygen libboost-all-dev meson unzip
   - git clone https://github.com/tensorflow/tensorflow
   - cd tensorflow && git checkout r1.9 && cd ..
+  # build tensorflow-lite
   - cd tensorflow && tensorflow/contrib/lite/download_dependencies.sh && cd ..
   - cd tensorflow && make -s -j4 -f tensorflow/contrib/lite/Makefile && cd ..
-  - CXXFLAGS=-isystem\ $PWD/tensorflow\ -isystem\ $PWD/tensorflow/tensorflow/contrib/lite/downloads/flatbuffers/include LDFLAGS=-L\ $(ls -d $PWD/tensorflow/tensorflow/contrib/lite/gen/lib/*)\ -ltensorflow-lite meson build --buildtype release --werror --warnlevel 3 --default-library static
+  # install tensorflow-lite
+  - mkdir -p /usr/local/include
+  - mkdir -p /usr/local/lib/pkgconfig
+  - echo 'prefix=/usr/local' > /usr/local/lib/pkgconfig/tensorflow-lite.pc
+  - echo 'libdir=${prefix}/lib' >> /usr/local/lib/pkgconfig/tensorflow-lite.pc
+  - echo 'includedir=${prefix}/include' >> /usr/local/lib/pkgconfig/tensorflow-lite.pc
+  - "echo 'Name: tensorflow-lite' >> /usr/local/lib/pkgconfig/tensorflow-lite.pc"
+  - "echo 'Description: Tensorflow Lite' >> /usr/local/lib/pkgconfig/tensorflow-lite.pc"
+  - "echo 'Version: 1.0' >> /usr/local/lib/pkgconfig/tensorflow-lite.pc"
+  - "echo 'Cflags: -I${includedir}' >> /usr/local/lib/pkgconfig/tensorflow-lite.pc"
+  - "echo 'Libs: -ltensorflow-lite' >> /usr/local/lib/pkgconfig/tensorflow-lite.pc"
+  # DEBUG!!
+  - cat /usr/local/lib/pkgconfig/tensorflow-lite.pc
+  - cp -R tensorflow/tensorflow /usr/local/include
+  - cp -R tensorflow/tensorflow/contrib/lite/downloads/flatbuffers/include /usr/local/include/
+  - cp $(find tensorflow/tensorflow/contrib/lite/gen/lib -name "libtensorflow-lite.a") /usr/local/lib
+  # build libaction
+  - meson build --buildtype release --werror --warnlevel 3 --default-library static
   - ninja -C build
   - doxygen
 
