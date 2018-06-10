@@ -2,7 +2,7 @@ build:
   stage: build
   script:
   # fetch stuff
-  - apt-get update -qq && apt-get install -y -qq doxygen libboost-all-dev meson unzip
+  - apt-get update -qq && apt-get install -y -qq doxygen graphviz libboost-all-dev meson unzip
   - git clone https://github.com/tensorflow/tensorflow
   - cd tensorflow && git checkout r1.9 && cd ..
   # build tensorflow-lite
@@ -27,11 +27,16 @@ build:
   - meson build --buildtype release --werror --warnlevel 3 --default-library static
   - ninja -C build
   - doxygen
+  - mv html docs
+  artifacts:
+    paths:
+    - build
+    - docs
 
 release:
   stage: deploy
   script:
-  - doxygen && mv html docs
+  - echo "Releasing..."
   artifacts:
     name: "libaction-$CI_COMMIT_REF_NAME"
     paths:
@@ -43,7 +48,7 @@ release:
 pages:
   stage: deploy
   script:
-  - doxygen && mv html public
+  - cp -R docs public
   artifacts:
     paths:
     - public
