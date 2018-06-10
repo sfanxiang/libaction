@@ -1,7 +1,7 @@
 build:
   stage: build
   script:
-  - apt-get update -qq && apt-get install -y -qq libboost-dev
+  - apt-get update -qq && apt-get install -y -qq libboost libboost-dev unzip
   - git clone https://github.com/tensorflow/tensorflow
   - cd tensorflow && git checkout r1.8 && cd ..
   - cd tensorflow && tensorflow/contrib/lite/download_dependencies.sh && cd ..
