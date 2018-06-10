@@ -3,9 +3,9 @@ build:
   script:
   - apt-get update -qq && apt-get install -y -qq libboost-dev
   - git clone https://github.com/tensorflow/tensorflow
-  - cd tensorflow && git checkout r1.8
-  - cd tensorflow && tensorflow/contrib/lite/download_dependencies.sh
-  - cd tensorflow && make -j4 -f tensorflow/contrib/lite/Makefile
+  - cd tensorflow && git checkout r1.8 && cd ..
+  - cd tensorflow && tensorflow/contrib/lite/download_dependencies.sh && cd ..
+  - cd tensorflow && make -j4 -f tensorflow/contrib/lite/Makefile && cd ..
   - CXXFLAGS=-isystem\ $PWD/tensorflow\ -isystem\ $PWD/tensorflow/tensorflow/contrib/lite/downloads/flatbuffers/include LDFLAGS=-L\ $(ls -d $PWD/tensorflow/tensorflow/contrib/lite/gen/lib/*)\ -ltensorflow-lite meson build --buildtype release --werror --warnlevel 3 --default-library static
   - ninja -C build
   - doxygen
