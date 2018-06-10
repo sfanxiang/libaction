@@ -1,6 +1,8 @@
 #ifndef LIBACTION__BODY_PART_HPP_
 #define LIBACTION__BODY_PART_HPP_
 
+#include <functional>
+
 namespace libaction
 {
 
@@ -74,6 +76,22 @@ private:
 	float x_{}, y_{}, score_{};
 };
 
+}
+
+namespace std {
+	/// Hash of libaction::BodyPart::PartIndex.
+	template<>
+	struct hash<libaction::BodyPart::PartIndex>
+	{
+		/// Hash of libaction::BodyPart::PartIndex.
+
+		/// @return                 Hash of libaction::BodyPart::PartIndex.
+		size_t operator()(const libaction::BodyPart::PartIndex &index)
+		const noexcept
+		{
+			return static_cast<size_t>(index);
+		}
+	};
 }
 
 #endif
