@@ -33,6 +33,16 @@ build:
     - build
     - docs
 
+pages:
+  stage: deploy
+  script:
+  - cp -R docs public
+  artifacts:
+    paths:
+    - public
+  only:
+  - tags
+
 release:
   stage: deploy
   script:
@@ -42,15 +52,5 @@ release:
     paths:
     - docs
     - include
-  only:
-  - tags
-
-pages:
-  stage: deploy
-  script:
-  - cp -R docs public
-  artifacts:
-    paths:
-    - public
   only:
   - tags
