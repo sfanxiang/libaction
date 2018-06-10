@@ -1,7 +1,7 @@
 build:
   stage: build
   script:
-  - apt-get update -qq && apt-get install -y -qq libboost-all-dev unzip
+  - apt-get update -qq && apt-get install -y -qq doxygen libboost-all-dev meson unzip
   - git clone https://github.com/tensorflow/tensorflow
   - cd tensorflow && git checkout r1.9 && cd ..
   - cd tensorflow && tensorflow/contrib/lite/download_dependencies.sh && cd ..
