@@ -46,7 +46,7 @@ pages:
 release:
   stage: deploy
   script:
-  - echo "Releasing..."
+  - rm include/meson.build
   artifacts:
     name: "libaction-$CI_COMMIT_REF_NAME"
     paths:
