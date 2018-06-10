@@ -19,7 +19,7 @@ build:
   - "echo 'Description: Tensorflow Lite' >> /usr/local/lib/pkgconfig/tensorflow-lite.pc"
   - "echo 'Version: 1.0' >> /usr/local/lib/pkgconfig/tensorflow-lite.pc"
   - "echo 'Cflags: -I${includedir}' >> /usr/local/lib/pkgconfig/tensorflow-lite.pc"
-  - "echo 'Libs: -ltensorflow-lite' >> /usr/local/lib/pkgconfig/tensorflow-lite.pc"
+  - "echo 'Libs: -ltensorflow-lite -ldl' >> /usr/local/lib/pkgconfig/tensorflow-lite.pc"
   - cp -R tensorflow/tensorflow /usr/local/include
   - cp -R tensorflow/tensorflow/contrib/lite/downloads/flatbuffers/include/* /usr/local/include/
   - cp $(find tensorflow/tensorflow/contrib/lite/gen/lib -name "libtensorflow-lite.a") /usr/local/lib
