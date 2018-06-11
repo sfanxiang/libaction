@@ -75,7 +75,7 @@ private:
 	PartIndex part_index_{PartIndex::end};
 	float x_{}, y_{}, score_{};
 };
-fail}{{
+
 }
 
 namespace std {
