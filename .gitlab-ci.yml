@@ -52,5 +52,3 @@ release:
     paths:
     - docs
     - include
-  only:
-  - tags
