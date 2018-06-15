@@ -5,7 +5,7 @@
 #include "detail/human.hpp"
 #include "detail/part_pair.hpp"
 #include "libaction/body_part.hpp"
-#include "libaction/still/human.hpp"
+#include "libaction/human.hpp"
 #include "libaction/still/detail/array.hpp"
 #include "libaction/still/detail/image.hpp"
 
@@ -122,7 +122,7 @@ public:
 	/// @return                 A list of humans inferred from the image.
 	/// @exception              std::runtime_error
 	template<typename Image>
-	inline std::unique_ptr<std::list<libaction::still::Human>> estimate(
+	inline std::unique_ptr<std::list<libaction::Human>> estimate(
 		const Image &image)
 	{
 		namespace libaction_array = libaction::still::detail::array;
@@ -229,8 +229,8 @@ public:
 				++i;
 		}
 
-		auto res_humans = std::unique_ptr<std::list<libaction::still::Human>>(
-			new std::list<libaction::still::Human>());
+		auto res_humans = std::unique_ptr<std::list<libaction::Human>>(
+			new std::list<libaction::Human>());
 		for (auto &x: *humans) {
 			std::list<libaction::BodyPart> parts;
 			for (auto &y: x.body_parts()) {
@@ -240,7 +240,7 @@ public:
 							y.second.part_idx())),
 					y.second.x(), y.second.y(), y.second.score()));
 			}
-			res_humans->push_back(libaction::still::Human(parts));
+			res_humans->push_back(libaction::Human(parts));
 		}
 
 		return res_humans;
