@@ -25,9 +25,22 @@ for root, dirs, files in os.walk('include'):
             with open(full_path, 'r') as f:
                 content = [line.strip('\r').strip('\n') for line in f]
 
-            # remove old guards
+            # strip trailing line
             if content and content[-1] == '':
                 content = content[:-1]
+
+            # separate comments at the beginning
+            comment_end = 0
+            while comment_end < len(content) and \
+                    (content[comment_end].lstrip(' ').startswith('/*') or
+                        content[comment_end].lstrip(' ').startswith('*') or
+                        content[comment_end].lstrip(' ').startswith('//') or
+                        content[comment_end].lstrip(' ') == ''):
+                comment_end += 1
+            comments = content[:comment_end]
+            content = content[comment_end:]
+
+            # remove old guards
             if len(content) >= 5 and content[0].startswith('#ifndef ') and \
                     content[1].startswith('#define ') and \
                     content[2] == '' and \
@@ -35,7 +48,8 @@ for root, dirs, files in os.walk('include'):
                     content[-1] == '#endif':
                 content = content[3:-2]
 
-            content = ['#ifndef ' + guard_name,
+            content = comments + \
+                      ['#ifndef ' + guard_name,
                        '#define ' + guard_name,
                        ''] + \
                       content + \
