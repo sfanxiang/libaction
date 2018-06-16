@@ -9,3 +9,8 @@ executable('action-still',
            sources : ['action_still.cpp'],
            include_directories : include_directories('../include'),
            dependencies : [deptensorflow, dependency('threads')])
+
+executable('action-motion',
+           sources : ['action_motion.cpp'],
+           include_directories : include_directories('../include'),
+           dependencies : [deptensorflow, dependency('threads')])
