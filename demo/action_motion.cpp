@@ -7,6 +7,8 @@
 
 #include <boost/multi_array.hpp>
 #include <libaction/human.hpp>
+// TODO: temp
+#include <libaction/still/single/estimator.hpp>
 #include <libaction/motion/single/estimator.hpp>
 #include <chrono>
 #include <cstdlib>
