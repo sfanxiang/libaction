@@ -15,6 +15,7 @@
 #include <iostream>
 #include <memory>
 #include <stdexcept>
+#include <string>
 
 /// @example action_still.cpp
 
@@ -36,37 +37,51 @@ static std::unique_ptr<boost::multi_array<uint8_t, 3>> read_image(
 	return image;
 }
 
-int main()
+int main(int argc, char *argv[])
 {
-	const size_t height = 224, width = 128, channels = 3;
+	if (argc != 7) {
+		std::cout << "Usage: <raw image file> <image height> <image width> "
+			"<graph file> <graph height> <graph width>" << std::endl;
+		return EXIT_FAILURE;
+	}
 
 	try {
+		const size_t channels = 3;
+
+		const std::string image_file = argv[1];
+		const size_t image_height = std::stoul(argv[2]);
+		const size_t image_width = std::stoul(argv[3]);
+		const std::string graph_file = argv[4];
+		const size_t graph_height = std::stoul(argv[5]);
+		const size_t graph_width = std::stoul(argv[6]);
+
+		// initialize the single pose estimator
 		libaction::still::single::Estimator<float> estimator(
-			"posenet_tflite.tflite", 0, height, width, channels);
+			graph_file, 0, graph_height, graph_width, channels);
 
-		const size_t im[] = {232, 217, 3};
-		auto image = read_image("p1.raw", im[0], im[1], im[2]);
+		// read the image
+		auto image = read_image(image_file, image_height, image_width,
+			channels);
 
-		for (int i = 0; i < 20; i++) {
-			auto time = std::chrono::steady_clock::now();
+		auto time_before = std::chrono::steady_clock::now();
+		// do estimation
+		auto humans = estimator.estimate(*image);
+		auto time_after = std::chrono::steady_clock::now();
 
-			auto humans = estimator.estimate(*image);
-
-			for (auto &human: *humans) {
-				auto &body_parts = human.body_parts();
-				for (auto &part: body_parts) {
-					std::cout << static_cast<int>(part.first) << ": "
-						<< part.second.x() * im[0] << ","
-						<< part.second.y() * im[1] << std::endl;
-				}
-				std::cout << std::endl;
+		for (auto &human: *humans) {
+			auto &body_parts = human.body_parts();
+			for (auto &part: body_parts) {
+				std::cout << static_cast<int>(part.first) << ": "
+					<< part.second.x() * image_height << ","
+					<< part.second.y() * image_width << std::endl;
 			}
-
-			auto now = std::chrono::steady_clock::now();
-			auto elapsed = std::chrono::duration_cast<
-				std::chrono::microseconds>(now - time).count();
-			std::cout << "Elapsed: " << elapsed << std::endl << std::endl;
+			std::cout << std::endl;
 		}
+
+		// show elapsed time
+		auto elapsed = std::chrono::duration_cast<
+			std::chrono::microseconds>(time_after - time_before).count();
+		std::cout << "Elapsed: " << elapsed << std::endl << std::endl;
 	} catch (std::exception &e) {
 		std::cerr << "Error: " << e.what() << std::endl;
 		return EXIT_FAILURE;
