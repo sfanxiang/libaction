@@ -7,12 +7,12 @@
 
 #include <boost/multi_array.hpp>
 #include <libaction/human.hpp>
-// TODO: temp
-#include <libaction/still/single/estimator.hpp>
 #include <libaction/motion/single/estimator.hpp>
+#include <libaction/still/single/estimator.hpp>
 #include <chrono>
 #include <cstdlib>
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <memory>
 #include <stdexcept>
@@ -38,57 +38,95 @@ static std::unique_ptr<boost::multi_array<uint8_t, 3>> read_image(
 	return image;
 }
 
+static std::unique_ptr<boost::multi_array<uint8_t, 3>> motion_callback(
+	const std::string &image_file_prefix,
+	const std::string &image_file_suffix,
+	size_t image_height, size_t image_width, size_t channels, size_t pos
+) {
+	// read the image
+	auto image = read_image(
+		image_file_prefix + std::to_string(pos) + image_file_suffix,
+		image_height, image_width, channels);
+	return image;
+}
+
 int main(int argc, char *argv[])
 {
-	if (argc != 7) {
-		std::cout << "Usage: <raw image files prefix> <raw image files suffix> "
+	if (argc != 9) {
+		std::cerr << "Usage: <raw image files prefix> <raw image files suffix> "
 			"<number of images> <image height> <image width> "
 			"<graph file> <graph height> <graph width>"
 			<< std::endl << std::endl
 			<< "For example, if <raw image files prefix> is \"image\", "
-			"<raw image files suffix> is \".raw\" and <number of images> is "
-			"3, then the image sequence is image0.raw, image1.raw, and "
+			"<raw image files suffix> is \".raw\" and <number of images> is 3, "
+			"then the image sequence is image0.raw, image1.raw, and "
 			"image2.raw." << std::endl;
 		return EXIT_FAILURE;
 	}
 
 	try {
 		const size_t channels = 3;
+		const size_t fuzz_range = 4;
+		const size_t fuzz_rate = 1;
 
-		const std::string image_file = argv[1];
-		const size_t image_height = std::stoul(argv[2]);
-		const size_t image_width = std::stoul(argv[3]);
-		const std::string graph_file = argv[4];
-		const size_t graph_height = std::stoul(argv[5]);
-		const size_t graph_width = std::stoul(argv[6]);
+		const std::string image_file_prefix = argv[1];
+		const std::string image_file_suffix = argv[2];
+		const unsigned long num_images = std::stoul(argv[3]);
+		const size_t image_height = std::stoul(argv[4]);
+		const size_t image_width = std::stoul(argv[5]);
+		const std::string graph_file = argv[6];
+		const size_t graph_height = std::stoul(argv[7]);
+		const size_t graph_width = std::stoul(argv[8]);
+
+		if (num_images == 0) {
+			throw std::runtime_error("<number of images> is zero");
+		}
 
 		// initialize the single pose estimator
-		libaction::still::single::Estimator<float> estimator(
+		libaction::still::single::Estimator<float> still_estimator(
 			graph_file, 0, graph_height, graph_width, channels);
 
-		// read the image
-		auto image = read_image(image_file, image_height, image_width,
-			channels);
+		// initialize the single motion estimator
+		libaction::motion::single::Estimator motion_estimator;
+
+		// initialize the callback
+		using callback_type = std::function<
+			std::unique_ptr<boost::multi_array<uint8_t, 3>>(size_t pos)>;
+		callback_type callback(std::bind(
+			&motion_callback,
+			image_file_prefix, image_file_suffix,
+			image_height, image_width, channels,
+			std::placeholders::_1));
 
 		auto time_before = std::chrono::steady_clock::now();
-		// do estimation
-		auto humans = estimator.estimate(*image);
-		auto time_after = std::chrono::steady_clock::now();
 
-		for (auto &human: *humans) {
-			auto &body_parts = human.body_parts();
-			for (auto &part: body_parts) {
-				std::cout << static_cast<int>(part.first) << ": "
-					<< part.second.x() * image_height << ","
-					<< part.second.y() * image_width << std::endl;
+		for (size_t i = 0; i < num_images; i++) {
+			// do estimation
+			auto humans = motion_estimator.estimate(i, num_images,
+				fuzz_range, fuzz_rate, still_estimator, callback);
+
+			// show results
+			for (auto &human: *humans) {
+				std::cout << "Human #" << human.first << std::endl;
+				auto &body_parts = human.second.body_parts();
+				for (auto &part: body_parts) {
+					std::cout << static_cast<int>(part.first) << ": "
+						<< part.second.x() * image_height << ","
+						<< part.second.y() * image_width << std::endl;
+				}
+				std::cout << std::endl;
 			}
-			std::cout << std::endl;
 		}
+
+		auto time_after = std::chrono::steady_clock::now();
 
 		// show elapsed time
 		auto elapsed = std::chrono::duration_cast<
 			std::chrono::microseconds>(time_after - time_before).count();
-		std::cout << "Elapsed: " << elapsed << std::endl << std::endl;
+		std::cout << "Elapsed: " << elapsed << std::endl;
+		std::cout << "Average: "
+			<< static_cast<double>(elapsed) / static_cast<double>(num_images)
+			<< std::endl;
 	} catch (std::exception &e) {
 		std::cerr << "Error: " << e.what() << std::endl;
 		return EXIT_FAILURE;

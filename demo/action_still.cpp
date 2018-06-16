@@ -39,7 +39,7 @@ static std::unique_ptr<boost::multi_array<uint8_t, 3>> read_image(
 int main(int argc, char *argv[])
 {
 	if (argc != 7) {
-		std::cout << "Usage: <raw image file> <image height> <image width> "
+		std::cerr << "Usage: <raw image file> <image height> <image width> "
 			"<graph file> <graph height> <graph width>" << std::endl;
 		return EXIT_FAILURE;
 	}
@@ -67,6 +67,7 @@ int main(int argc, char *argv[])
 		auto humans = estimator.estimate(*image);
 		auto time_after = std::chrono::steady_clock::now();
 
+		// show results
 		for (auto &human: *humans) {
 			auto &body_parts = human.body_parts();
 			for (auto &part: body_parts) {
@@ -80,7 +81,7 @@ int main(int argc, char *argv[])
 		// show elapsed time
 		auto elapsed = std::chrono::duration_cast<
 			std::chrono::microseconds>(time_after - time_before).count();
-		std::cout << "Elapsed: " << elapsed << std::endl << std::endl;
+		std::cout << "Elapsed: " << elapsed << std::endl;
 	} catch (std::exception &e) {
 		std::cerr << "Error: " << e.what() << std::endl;
 		return EXIT_FAILURE;

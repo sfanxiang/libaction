@@ -31,16 +31,21 @@ class Estimator
 {
 public:
 	/// Constructor.
-	inline Estimator();
+	inline Estimator()
+	{}
 
 	/// TODO.
 	template<typename StillEstimator, typename ImagePtr>
 	inline std::unique_ptr<std::unordered_map<size_t, libaction::Human>>
 	estimate(
-		size_t pos, size_t length, size_t rate, size_t fuzz_range,
+		size_t pos, size_t length, size_t fuzz_range, size_t fuzz_rate,
 		StillEstimator &still_estimator,
-		std::unique_ptr<std::function<ImagePtr(size_t pos)>> callback
+		std::function<ImagePtr(size_t pos)> &callback
 	) {
+		// TODO: USE THESE:
+		static_cast<void>(fuzz_range);
+		static_cast<void>(fuzz_rate);
+
 		if (length == 0) {
 			throw std::runtime_error("length == 0");
 		}
@@ -80,15 +85,15 @@ private:
 	template<typename StillEstimator, typename ImagePtr>
 	inline decltype(poses)::iterator process_initial_frame(
 		StillEstimator &still_estimator,
-		std::unique_ptr<std::function<ImagePtr(size_t pos)>> callback)
+		std::function<ImagePtr(size_t pos)> &callback)
 	{
 		// estimate the pose at 0
 		auto pose_initial = estimate_pose_still(0, still_estimator, callback);
 
 		// body parts present in the initial frame are considered available
 		avail.clear();
-		if (*pose_initial) {
-			for (auto &part: (*pose_initial)->body_parts()) {
+		if (pose_initial->second) {
+			for (auto &part: pose_initial->second->body_parts()) {
 				avail.insert(part.first);
 			}
 		}
@@ -100,9 +105,12 @@ private:
 	template<typename StillEstimator, typename ImagePtr>
 	inline decltype(poses)::iterator estimate_pose_still(size_t pos,
 		StillEstimator &still_estimator,
-		std::unique_ptr<std::function<ImagePtr(size_t pos)>> callback)
+		std::function<ImagePtr(size_t pos)> &callback)
 	{
-		auto humans = still_estimator.estimate((*callback)(pos));
+		auto image = callback(pos);
+		auto humans = still_estimator.estimate(*image);
+		image.reset();
+
 		std::unique_ptr<libaction::Human> human;
 
 		if (!humans->empty()) {
