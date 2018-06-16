@@ -14,7 +14,7 @@ build:
   - cd tensorflow && git checkout r1.9 && cd ..
   # build tensorflow-lite
   - cd tensorflow && tensorflow/contrib/lite/download_dependencies.sh && cd ..
-  - cd tensorflow && make -s -j4 -f tensorflow/contrib/lite/Makefile && cd ..
+  - cd tensorflow && make -s -j $(nproc) -f tensorflow/contrib/lite/Makefile && cd ..
   # install tensorflow-lite
   - mkdir -p /usr/local/include
   - mkdir -p /usr/local/lib/pkgconfig
