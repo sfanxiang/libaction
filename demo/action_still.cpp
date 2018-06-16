@@ -7,7 +7,6 @@
 
 #include <boost/multi_array.hpp>
 #include <libaction/human.hpp>
-#include <libaction/still/multi/estimator.hpp>
 #include <libaction/still/single/estimator.hpp>
 #include <chrono>
 #include <cstdlib>
