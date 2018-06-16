@@ -62,8 +62,12 @@ public:
 			pose_initial = process_initial_frame(still_estimator, callback);
 		}
 
-		// estimate the pose at pos
-		pose_pos = estimate_pose_still(pos, still_estimator, callback);
+		if (pos == 0) {
+			pose_pos = pose_initial;
+		} else {
+			// estimate the pose at pos
+			pose_pos = estimate_pose_still(pos, still_estimator, callback);
+		}
 
 		return human_pose_at(pose_pos);
 	}
