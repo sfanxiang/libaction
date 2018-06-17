@@ -67,7 +67,7 @@ public:
 
 
 
-		return get_human_pose(*it);
+		return get_human_pose(it->second);
 	}
 
 	/// Reset the status of Estimator.
