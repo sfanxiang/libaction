@@ -42,6 +42,10 @@ public:
 		StillEstimator &still_estimator,
 		std::function<ImagePtr(size_t pos)> &callback
 	) {
+		// TODO: USE THESE
+		static_cast<void>(fuzz_range);
+		static_cast<void>(fuzz_rate);
+
 		if (length == 0) {
 			throw std::runtime_error("length == 0");
 		}
@@ -90,7 +94,7 @@ private:
 		std::function<ImagePtr(size_t pos)> &callback)
 	{
 		// estimate the pose at 0
-		auto initial_it = estimate_pose_still(0, still_estimator, callback);
+		auto initial_it = estimate_still_pose(0, still_estimator, callback);
 
 		// body parts present in the initial frame are considered available
 		avail.clear();
