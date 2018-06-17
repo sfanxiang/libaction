@@ -8,6 +8,7 @@
 #ifndef LIBACTION__STILL__MULTI__DETAIL__PART_PAIR_HPP_
 #define LIBACTION__STILL__MULTI__DETAIL__PART_PAIR_HPP_
 
+#include <cstddef>
 #include <utility>
 
 namespace libaction

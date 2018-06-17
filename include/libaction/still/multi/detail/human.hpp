@@ -9,6 +9,7 @@
 #define LIBACTION__STILL__MULTI__DETAIL__HUMAN_HPP_
 
 #include "body_part.hpp"
+#include "coco_parts.hpp"
 #include "part_pair.hpp"
 
 #include <map>

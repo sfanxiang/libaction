@@ -8,6 +8,8 @@
 #ifndef LIBACTION__STILL__MULTI__DETAIL__BODY_PART_HPP_
 #define LIBACTION__STILL__MULTI__DETAIL__BODY_PART_HPP_
 
+#include <cstddef>
+
 namespace libaction
 {
 namespace still

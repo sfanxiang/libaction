@@ -8,7 +8,7 @@
 #ifndef LIBACTION__STILL__MULTI__DETAIL__COCO_PARTS_HPP_
 #define LIBACTION__STILL__MULTI__DETAIL__COCO_PARTS_HPP_
 
-#include "libaction/body_part.hpp"
+#include "../../../body_part.hpp"
 
 #include <array>
 #include <utility>

@@ -8,7 +8,7 @@
 #ifndef LIBACTION__STILL__SINGLE__DETAIL__POSENET_PARTS_HPP_
 #define LIBACTION__STILL__SINGLE__DETAIL__POSENET_PARTS_HPP_
 
-#include "libaction/body_part.hpp"
+#include "../../../body_part.hpp"
 
 #include <array>
 #include <utility>

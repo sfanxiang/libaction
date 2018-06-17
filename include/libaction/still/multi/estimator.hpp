@@ -8,13 +8,13 @@
 #ifndef LIBACTION__STILL__MULTI__ESTIMATOR_HPP_
 #define LIBACTION__STILL__MULTI__ESTIMATOR_HPP_
 
+#include "../../body_part.hpp"
+#include "../../human.hpp"
+#include "../detail/array.hpp"
+#include "../detail/image.hpp"
 #include "detail/coco_parts.hpp"
 #include "detail/human.hpp"
 #include "detail/part_pair.hpp"
-#include "libaction/body_part.hpp"
-#include "libaction/human.hpp"
-#include "libaction/still/detail/array.hpp"
-#include "libaction/still/detail/image.hpp"
 
 #include <boost/multi_array.hpp>
 #include <tensorflow/contrib/lite/kernels/register.h>
@@ -28,6 +28,8 @@
 #include <set>
 #include <stdexcept>
 #include <string>
+#include <utility>
+#include <vector>
 
 namespace libaction
 {
