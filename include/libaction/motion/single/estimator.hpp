@@ -10,7 +10,7 @@
 
 #include "../../body_part.hpp"
 #include "../../human.hpp"
-#include "../detail/angle.hpp"
+#include "../detail/fuzz.hpp"
 
 #include <cstdint>
 #include <functional>
@@ -35,43 +35,52 @@ public:
 	{}
 
 	/// TODO.
-	template<typename StillEstimator, typename ImagePtr>
+	template<typename NeededSet, typename StillEstimator, typename ImagePtr>
 	inline std::unique_ptr<std::unordered_map<size_t, libaction::Human>>
 	estimate(
 		size_t pos, size_t length, size_t fuzz_range, size_t fuzz_rate,
+		const NeededSet &needed,
 		StillEstimator &still_estimator,
 		std::function<ImagePtr(size_t pos)> &callback
 	) {
-		// TODO: USE THESE
-		static_cast<void>(fuzz_range);
-		static_cast<void>(fuzz_rate);
-
 		if (length == 0) {
 			throw std::runtime_error("length == 0");
 		}
-
-		// the initial pose
-		auto initial_it = still_poses.find(0);
-		if (initial_it == still_poses.end()) {
-			// the initial frame has not been processed
-			initial_it = process_initial_frame(still_estimator, callback);
+		if (length <= pos) {
+			throw std::runtime_error("length <= pos");
 		}
 
-		// the pose at pos
-		decltype(still_poses)::iterator it;
-		if (pos == 0) {
-			it = initial_it;
-		} else {
-			it = still_poses.find(pos);
-			if (it == still_poses.end()) {
-				// estimate the pose at pos
-				it = estimate_still_pose(pos, still_estimator, callback);
+		auto fuzz_cb = [pos, length, &still_estimator, &callback, this]
+				(size_t offset, bool left) -> libaction::Human* {
+			auto result_pos = pos;
+			if (left) {
+				if (offset > pos) {
+					return nullptr;
+				} else {
+					auto it = still_poses.find(pos - offset);
+					if (it == still_poses.end()) {
+						it = estimate_still_pose(pos - offset, still_estimator, callback);
+					}
+					return it->second.get();
+				}
+			} else {
+				if (offset >= length - pos) {
+					return nullptr;
+				} else {
+					auto it = still_poses.find(pos + offset);
+					if (it == still_poses.end()) {
+						it = estimate_still_pose(pos + offset, still_estimator, callback);
+					}
+					return it->second.get();
+				}
 			}
-		}
+		};
 
+		auto human = detail::fuzz::fuzz(fuzz_range, fuzz_rate, needed,
+			std::unique_ptr<std::function<libaction::Human*(size_t, bool)>>(
+				new std::function<libaction::Human*(size_t, bool)>(fuzz_cb)));
 
-
-		return get_human_pose(it->second);
+		return get_human_pose(human);
 	}
 
 	/// Reset the status of Estimator.
@@ -80,32 +89,10 @@ public:
 	inline void reset()
 	{
 		still_poses.clear();
-		avail.clear();
 	}
 
 private:
 	std::unordered_map<size_t, std::unique_ptr<libaction::Human>> still_poses{};
-	std::unordered_set<libaction::BodyPart::PartIndex> avail{};
-
-	/// Process the unprocessed initial frame.
-	template<typename StillEstimator, typename ImagePtr>
-	inline decltype(still_poses)::iterator process_initial_frame(
-		StillEstimator &still_estimator,
-		std::function<ImagePtr(size_t pos)> &callback)
-	{
-		// estimate the pose at 0
-		auto initial_it = estimate_still_pose(0, still_estimator, callback);
-
-		// body parts present in the initial frame are considered available
-		avail.clear();
-		if (initial_it->second) {
-			for (auto &part: initial_it->second->body_parts()) {
-				avail.insert(part.first);
-			}
-		}
-
-		return initial_it;
-	}
 
 	/// Estimate the pose at a position using a still estimator.
 	template<typename StillEstimator, typename ImagePtr>
