@@ -123,117 +123,73 @@ inline std::tuple<size_t, size_t, size_t> search_for_ends(
 		throw std::runtime_error("fuzz_rate == 0");
 	}
 
-	// results of each direction
-	std::vector<std::pair<
-		std::vector<libaction::BodyPart::PartIndex>, size_t>>
-		lresults, rresults;
+	std::tuple<size_t, size_t, size_t> result{0, 0, 0};
 
-	// lambda to find end in lresults/rresults
-	auto find = [] (
-		const std::vector<libaction::BodyPart::PartIndex> &end,
-		const std::pair<
-			std::vector<libaction::BodyPart::PartIndex>,
-			size_t
-		> &end_offset
-	) {
-		return end_offset.first == end;
-	};
+	if (fuzz_range < fuzz_rate || fuzz_range - fuzz_rate < fuzz_rate) {
+		// impossible
+		return result;
+	}
 
-	// offset from the target
-	size_t offset = 0;
+	size_t ends_index_next = 0;
 
-	// whether any direction has reached its end
-	bool lend = false, rend = false;
+	// look into each end
+	for (auto &end: ends) {
+		size_t ends_index = ends_index_next;
+		ends_index_next++;
 
-	while (!lend || !rend) {
-		// move one step
-		offset += fuzz_rate;
-		if (offset > fuzz_range)
-			break;
-
-		if (!lend) {
-			// look left and get the candidate
-			HumanPtr cand = callback(offset, true);
-			if (!cand) {
-				// reached end
-				lend = true;
-			} else {
-				size_t end_index = 0;	// index of the end in ends
-
-				for (auto &end: ends) {
-					if (has_end(*cand, end)) {
-						// candidate has this particular end
-
-						// Do we have the same end on the right?
-						auto res = std::find_if(
-							rresults.begin(), rresults.end(),
-							std::bind(find, std::cref(end),
-								std::placeholders::_1));
-						if (res != rresults.end()) {
-							// we've found a valid result
-							return std::make_tuple(
-								offset, res->second, end_index);
-						}
-
-						// Save this candidate, but discard any duplicate,
-						// because candidates nearer to the target have
-						// higher priority.
-						res = std::find_if(
-							lresults.begin(), lresults.end(),
-							std::bind(find, std::cref(end),
-								std::placeholders::_1));
-						if (res == lresults.end()) {
-							lresults.push_back(std::make_pair(end, offset));
-						}
-					}
-					end_index++;
-				}
+		// try to find the first pose that contains this end on the left
+		bool found = false;
+		size_t loff = fuzz_rate;
+		for (; loff < fuzz_range &&
+				(std::get<0>(result) == 0 ||
+				std::get<0>(result) + std::get<1>(result) > loff + fuzz_rate);
+			loff += fuzz_rate)
+		{
+			auto human = callback(loff, true);
+			if (!human) {
+				// reached the left bound
+				found = false;
+				break;
+			}
+			if (has_end(*human, end)) {
+				found = true;
+				break;
 			}
 		}
+		if (!found)
+			continue;
 
-		if (!rend) {
-			// look right and get the candidate
-			HumanPtr cand = callback(offset, false);
-			if (!cand) {
-				// reached end
-				rend = true;
-			} else {
-				size_t end_index = 0;	// index of the end in ends
-
-				for (auto &end: ends) {
-					if (has_end(*cand, end)) {
-						// candidate has this particular end
-
-						// Do we have the same end on the left?
-						auto res = std::find_if(
-							lresults.begin(), lresults.end(),
-							std::bind(find, std::cref(end),
-								std::placeholders::_1));
-						if (res != lresults.end()) {
-							// we've found a valid result
-							return std::make_tuple(
-								res->second, offset, end_index);
-						}
-
-						// Save this candidate, but discard any duplicate,
-						// because candidates nearer to the target have
-						// higher priority.
-						res = std::find_if(
-							rresults.begin(), rresults.end(),
-							std::bind(find, std::cref(end),
-								std::placeholders::_1));
-						if (res == rresults.end()) {
-							rresults.push_back(std::make_pair(end, offset));
-						}
-					}
-					end_index++;
-				}
+		// try to find the first pose that contains this end on the right
+		found = false;
+		size_t roff = fuzz_rate;
+		for(; roff <= fuzz_range - loff &&
+				(std::get<0>(result) == 0 ||
+				std::get<0>(result) + std::get<1>(result) > loff + roff);
+			roff += fuzz_rate)
+		{
+			auto human = callback(roff, false);
+			if (!human) {
+				// reached the right bound
+				found = false;
+				break;
 			}
+			if (has_end(*human, end)) {
+				found = true;
+				break;
+			}
+		}
+		if (!found)
+			continue;
+
+		result = std::make_tuple(loff, roff, ends_index);
+
+		if (loff == fuzz_rate && roff == fuzz_rate) {
+			// no better finding possible
+			break;
 		}
 	}
 
-	// not found
-	return std::make_tuple(0, 0, 0);
+	return result;
 }
 
 inline libaction::BodyPart get_fuzz_part(
