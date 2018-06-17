@@ -8,9 +8,9 @@
 #ifndef LIBACTION__MOTION__SINGLE__ESTIMATOR_HPP_
 #define LIBACTION__MOTION__SINGLE__ESTIMATOR_HPP_
 
-#include "libaction/body_part.hpp"
-#include "libaction/human.hpp"
-#include "libaction/motion/detail/angle.hpp"
+#include "../../body_part.hpp"
+#include "../../human.hpp"
+#include "../detail/angle.hpp"
 
 #include <cstdint>
 #include <functional>
@@ -42,34 +42,32 @@ public:
 		StillEstimator &still_estimator,
 		std::function<ImagePtr(size_t pos)> &callback
 	) {
-		// TODO: USE THESE:
-		static_cast<void>(fuzz_range);
-		static_cast<void>(fuzz_rate);
-
 		if (length == 0) {
 			throw std::runtime_error("length == 0");
 		}
 
-		auto pose_pos = poses.find(pos);
-		if (pose_pos != poses.end()) {
-			// return existing pose
-			return human_pose_at(pose_pos);
-		}
-
-		auto pose_initial = poses.find(0);
-		if (pose_initial == poses.end()) {
+		// the initial pose
+		auto initial_it = still_poses.find(0);
+		if (initial_it == still_poses.end()) {
 			// the initial frame has not been processed
-			pose_initial = process_initial_frame(still_estimator, callback);
+			initial_it = process_initial_frame(still_estimator, callback);
 		}
 
+		// the pose at pos
+		decltype(still_poses)::iterator it;
 		if (pos == 0) {
-			pose_pos = pose_initial;
+			it = initial_it;
 		} else {
-			// estimate the pose at pos
-			pose_pos = estimate_pose_still(pos, still_estimator, callback);
+			it = still_poses.find(pos);
+			if (it == still_poses.end()) {
+				// estimate the pose at pos
+				it = estimate_still_pose(pos, still_estimator, callback);
+			}
 		}
 
-		return human_pose_at(pose_pos);
+
+
+		return get_human_pose(*it);
 	}
 
 	/// Reset the status of Estimator.
@@ -77,37 +75,37 @@ public:
 	///	This is necessary when the stream or parameter is changed.
 	inline void reset()
 	{
-		poses.clear();
+		still_poses.clear();
 		avail.clear();
 	}
 
 private:
-	std::unordered_map<size_t, std::unique_ptr<libaction::Human>> poses{};
+	std::unordered_map<size_t, std::unique_ptr<libaction::Human>> still_poses{};
 	std::unordered_set<libaction::BodyPart::PartIndex> avail{};
 
 	/// Process the unprocessed initial frame.
 	template<typename StillEstimator, typename ImagePtr>
-	inline decltype(poses)::iterator process_initial_frame(
+	inline decltype(still_poses)::iterator process_initial_frame(
 		StillEstimator &still_estimator,
 		std::function<ImagePtr(size_t pos)> &callback)
 	{
 		// estimate the pose at 0
-		auto pose_initial = estimate_pose_still(0, still_estimator, callback);
+		auto initial_it = estimate_pose_still(0, still_estimator, callback);
 
 		// body parts present in the initial frame are considered available
 		avail.clear();
-		if (pose_initial->second) {
-			for (auto &part: pose_initial->second->body_parts()) {
+		if (initial_it->second) {
+			for (auto &part: initial_it->second->body_parts()) {
 				avail.insert(part.first);
 			}
 		}
 
-		return pose_initial;
+		return initial_it;
 	}
 
 	/// Estimate the pose at a position using a still estimator.
 	template<typename StillEstimator, typename ImagePtr>
-	inline decltype(poses)::iterator estimate_pose_still(size_t pos,
+	inline decltype(still_poses)::iterator estimate_still_pose(size_t pos,
 		StillEstimator &still_estimator,
 		std::function<ImagePtr(size_t pos)> &callback)
 	{
@@ -122,19 +120,20 @@ private:
 				new libaction::Human(std::move(*humans->begin())));
 		}
 
-		auto it = poses.insert(std::make_pair(pos, std::move(human))).first;
+		auto it = still_poses.insert(std::make_pair(pos, std::move(human)))
+			.first;
 
 		return it;
 	}
 
 	/// Get the processed human pose to return to the user.
 	inline std::unique_ptr<std::unordered_map<size_t, libaction::Human>>
-	human_pose_at(decltype(poses)::iterator it)
+	get_human_pose(const std::unique_ptr<libaction::Human> &human)
 	{
-		if (it->second) {
+		if (human) {
 			return std::unique_ptr<std::unordered_map<size_t, libaction::Human>>(
 				new std::unordered_map<size_t, libaction::Human>(
-					{ std::make_pair(0, *it->second) }));
+					{ std::make_pair(0, *human) }));
 		} else {
 			return std::unique_ptr<std::unordered_map<size_t, libaction::Human>>(
 				new std::unordered_map<size_t, libaction::Human>());
