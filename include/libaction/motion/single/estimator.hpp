@@ -35,11 +35,11 @@ public:
 	{}
 
 	/// TODO.
-	template<typename NeededSet, typename StillEstimator, typename ImagePtr>
+	template<typename Needed, typename StillEstimator, typename ImagePtr>
 	inline std::unique_ptr<std::unordered_map<size_t, libaction::Human>>
 	estimate(
 		size_t pos, size_t length, size_t fuzz_range, size_t fuzz_rate,
-		const NeededSet &needed,
+		const Needed &needed,
 		StillEstimator &still_estimator,
 		std::function<ImagePtr(size_t pos)> &callback
 	) {
@@ -50,9 +50,9 @@ public:
 			throw std::runtime_error("length <= pos");
 		}
 
-		auto fuzz_cb = [pos, length, &still_estimator, &callback, this]
+		std::function<libaction::Human*(size_t, bool)> fuzz_cb =
+			[pos, length, &still_estimator, &callback, this]
 				(size_t offset, bool left) -> libaction::Human* {
-			auto result_pos = pos;
 			if (left) {
 				if (offset > pos) {
 					return nullptr;
@@ -76,9 +76,7 @@ public:
 			}
 		};
 
-		auto human = detail::fuzz::fuzz(fuzz_range, fuzz_rate, needed,
-			std::unique_ptr<std::function<libaction::Human*(size_t, bool)>>(
-				new std::function<libaction::Human*(size_t, bool)>(fuzz_cb)));
+		auto human = detail::fuzz::fuzz(fuzz_range, fuzz_rate, needed, fuzz_cb);
 
 		return get_human_pose(human);
 	}

@@ -117,8 +117,7 @@ template<typename HumanPtr>
 inline std::tuple<size_t, size_t, size_t> search_for_ends(
 	size_t fuzz_range, size_t fuzz_rate,
 	const std::vector<std::vector<libaction::BodyPart::PartIndex>> &ends,
-	std::unique_ptr<std::function<
-		HumanPtr(size_t relative_pos, bool left)>> callback)
+	std::function<HumanPtr(size_t relative_pos, bool left)> &callback)
 {
 	if (fuzz_rate == 0) {
 		throw std::runtime_error("fuzz_rate == 0");
@@ -154,7 +153,7 @@ inline std::tuple<size_t, size_t, size_t> search_for_ends(
 
 		if (!lend) {
 			// look left and get the candidate
-			HumanPtr cand = (*callback)(offset, true);
+			HumanPtr cand = callback(offset, true);
 			if (!cand) {
 				// reached end
 				lend = true;
@@ -166,8 +165,10 @@ inline std::tuple<size_t, size_t, size_t> search_for_ends(
 						// candidate has this particular end
 
 						// Do we have the same end on the right?
-						auto res = std::find(
-							rresults, std::bind(find, std::cref(end)));
+						auto res = std::find_if(
+							rresults.begin(), rresults.end(),
+							std::bind(find, std::cref(end),
+								std::placeholders::_1));
 						if (res != rresults.end()) {
 							// we've found a valid result
 							return std::make_tuple(
@@ -177,8 +178,10 @@ inline std::tuple<size_t, size_t, size_t> search_for_ends(
 						// Save this candidate, but discard any duplicate,
 						// because candidates nearer to the target have
 						// higher priority.
-						res = std::find(
-							lresults, std::bind(find, std::cref(end)));
+						res = std::find_if(
+							lresults.begin(), lresults.end(),
+							std::bind(find, std::cref(end),
+								std::placeholders::_1));
 						if (res == lresults.end()) {
 							lresults.push_back(std::make_pair(end, offset));
 						}
@@ -190,7 +193,7 @@ inline std::tuple<size_t, size_t, size_t> search_for_ends(
 
 		if (!rend) {
 			// look right and get the candidate
-			HumanPtr cand = (*callback)(offset, false);
+			HumanPtr cand = callback(offset, false);
 			if (!cand) {
 				// reached end
 				rend = true;
@@ -202,8 +205,10 @@ inline std::tuple<size_t, size_t, size_t> search_for_ends(
 						// candidate has this particular end
 
 						// Do we have the same end on the left?
-						auto res = std::find(
-							lresults, std::bind(find, std::cref(end)));
+						auto res = std::find_if(
+							lresults.begin(), lresults.end(),
+							std::bind(find, std::cref(end),
+								std::placeholders::_1));
 						if (res != lresults.end()) {
 							// we've found a valid result
 							return std::make_tuple(
@@ -213,8 +218,10 @@ inline std::tuple<size_t, size_t, size_t> search_for_ends(
 						// Save this candidate, but discard any duplicate,
 						// because candidates nearer to the target have
 						// higher priority.
-						res = std::find(
-							rresults, std::bind(find, std::cref(end)));
+						res = std::find_if(
+							rresults.begin(), rresults.end(),
+							std::bind(find, std::cref(end),
+								std::placeholders::_1));
 						if (res == rresults.end()) {
 							rresults.push_back(std::make_pair(end, offset));
 						}
@@ -296,19 +303,18 @@ inline libaction::BodyPart get_fuzz_part(
 	float x = x_end + length * std::cos(angle);
 	float y = y_end + length * std::sin(angle);
 
-	return libaction::BodyPart(left_body_part.part_index(), x, y, score);
+	return libaction::BodyPart(part_index, x, y, score);
 }
 
 }
 
-template<typename NeededSet, typename HumanPtr>
+template<typename Needed, typename HumanPtr>
 inline std::unique_ptr<libaction::Human> fuzz(
 	size_t fuzz_range, size_t fuzz_rate,
-	const NeededSet &needed,
-	std::unique_ptr<std::function<
-		HumanPtr(size_t relative_pos, bool left)>> callback)
+	const Needed &needed,
+	std::function<HumanPtr(size_t relative_pos, bool left)> &callback)
 {
-	HumanPtr target = (*callback)(0, false);
+	HumanPtr target = callback(0, false);
 	if (!target) {
 		throw std::runtime_error("fuzz target not found");
 	}
@@ -331,8 +337,8 @@ inline std::unique_ptr<libaction::Human> fuzz(
 
 		auto result = search_for_ends(fuzz_range, fuzz_rate, ends, callback);
 		if (std::get<0>(result) != 0) {
-			auto left = (*callback)(std::get<0>(result));
-			auto right = (*callback)(std::get<1>(result));
+			auto left = callback(std::get<0>(result), true);
+			auto right = callback(std::get<1>(result), false);
 			auto end = ends[std::get<2>(result)];
 
 			add.push_back(get_fuzz_part(
@@ -341,8 +347,9 @@ inline std::unique_ptr<libaction::Human> fuzz(
 		}
 	}
 
-	add.insert(add.end(),
-		target->body_parts().begin(), target->body_parts().end());
+	for (auto &part: target->body_parts()) {
+		add.push_back(part.second);
+	}
 
 	return std::unique_ptr<libaction::Human>(new libaction::Human(add));
 }
