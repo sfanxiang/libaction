@@ -260,8 +260,8 @@ inline libaction::BodyPart get_fuzz_part(
 	float y_left_part = left_body_part.y();
 	score *= left_body_part.score();
 
-	auto left_angle = std::atan(
-		(y_left_part - y_left_end) / (x_left_part - x_left_end));
+	auto left_angle = std::atan2(
+		(y_left_part - y_left_end), (x_left_part - x_left_end));
 	auto left_length = std::sqrt(
 		(x_left_part - x_left_end) * (x_left_part - x_left_end) +
 		(y_left_part - y_left_end) * (y_left_part - y_left_end));
@@ -279,8 +279,8 @@ inline libaction::BodyPart get_fuzz_part(
 	float y_right_part = right_body_part.y();
 	score *= right_body_part.score();
 
-	auto right_angle = std::atan(
-		(y_right_part - y_right_end) / (x_right_part - x_right_end));
+	auto right_angle = std::atan2(
+		(y_right_part - y_right_end), (x_right_part - x_right_end));
 	auto right_length = std::sqrt(
 		(x_right_part - x_right_end) * (x_right_part - x_right_end) +
 		(y_right_part - y_right_end) * (y_right_part - y_right_end));
