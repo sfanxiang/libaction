@@ -54,6 +54,7 @@ public:
 	///                         be passed to `still_estimator.estimate()`.
 	/// @return                 A map of humans from their index numbers.
 	/// @exception              std::runtime_error
+	/// @sa                     still::single::Estimator
 	template<typename Needed, typename StillEstimator, typename ImagePtr>
 	inline std::unique_ptr<std::unordered_map<size_t, libaction::Human>>
 	estimate(
