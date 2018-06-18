@@ -124,6 +124,7 @@ int main(int argc, char *argv[])
 				still_estimator, callback);
 
 			// show results
+			std::cout << "======== Image #" << i << " ========" << std::endl;
 			for (auto &human: *humans) {
 				std::cout << "Human #" << human.first << std::endl;
 				auto &body_parts = human.second.body_parts();

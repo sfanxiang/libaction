@@ -101,6 +101,12 @@ other_ends(libaction::BodyPart::PartIndex end)
 	}
 }
 
+inline bool has_part(const libaction::Human &human,
+	libaction::BodyPart::PartIndex part_index)
+{
+	return human.body_parts().find(part_index) != human.body_parts().end();
+}
+
 inline bool has_end(const libaction::Human &human,
 	const std::vector<libaction::BodyPart::PartIndex> &end)
 {
@@ -116,6 +122,7 @@ inline bool has_end(const libaction::Human &human,
 template<typename HumanPtr>
 inline std::tuple<size_t, size_t, size_t> search_for_ends(
 	size_t fuzz_range, size_t fuzz_rate,
+	libaction::BodyPart::PartIndex part_index,
 	const std::vector<std::vector<libaction::BodyPart::PartIndex>> &ends,
 	std::function<HumanPtr(size_t relative_pos, bool left)> &callback)
 {
@@ -151,7 +158,7 @@ inline std::tuple<size_t, size_t, size_t> search_for_ends(
 				found = false;
 				break;
 			}
-			if (has_end(*human, end)) {
+			if (has_part(*human, part_index) && has_end(*human, end)) {
 				found = true;
 				break;
 			}
@@ -173,7 +180,7 @@ inline std::tuple<size_t, size_t, size_t> search_for_ends(
 				found = false;
 				break;
 			}
-			if (has_end(*human, end)) {
+			if (has_part(*human, part_index) && has_end(*human, end)) {
 				found = true;
 				break;
 			}
@@ -204,7 +211,7 @@ inline libaction::BodyPart get_fuzz_part(
 	float score = 1.0;
 
 	float x_left_end = 0, y_left_end = 0;
-	for (auto &end_index: end) {
+	for (auto end_index: end) {
 		auto &body_part = left.body_parts().at(end_index);
 		x_left_end += body_part.x() / static_cast<float>(end.size());
 		y_left_end += body_part.y() / static_cast<float>(end.size());
@@ -223,7 +230,7 @@ inline libaction::BodyPart get_fuzz_part(
 		(y_left_part - y_left_end) * (y_left_part - y_left_end));
 
 	float x_right_end = 0, y_right_end = 0;
-	for (auto &end_index: end) {
+	for (auto end_index: end) {
 		auto &body_part = right.body_parts().at(end_index);
 		x_right_end += body_part.x() / static_cast<float>(end.size());
 		y_right_end += body_part.y() / static_cast<float>(end.size());
@@ -249,7 +256,7 @@ inline libaction::BodyPart get_fuzz_part(
 	auto length = left_length / toff * roff + right_length / toff * loff;
 
 	float x_end = 0, y_end = 0;
-	for (auto &end_index: end) {
+	for (auto end_index: end) {
 		auto &body_part = target.body_parts().at(end_index);
 		x_end += body_part.x() / static_cast<float>(end.size());
 		y_end += body_part.y() / static_cast<float>(end.size());
@@ -277,13 +284,13 @@ inline std::unique_ptr<libaction::Human> fuzz(
 
 	std::vector<libaction::BodyPart> add;
 
-	for (auto &part_idx: needed) {
-		if (target->body_parts().find(part_idx) != target->body_parts().end()) {
-			// if part_idx already exists in target, skip
+	for (auto &part_index: needed) {
+		if (has_part(*target, part_index)) {
+			// if part_index already exists in target, skip
 			continue;
 		}
 
-		auto all_ends = other_ends(part_idx);
+		auto all_ends = other_ends(part_index);
 		decltype(all_ends) ends;	// ends that exist in target
 		for (auto &end: all_ends) {
 			if (has_end(*target, end)) {
@@ -291,16 +298,22 @@ inline std::unique_ptr<libaction::Human> fuzz(
 			}
 		}
 
-		auto result = search_for_ends(fuzz_range, fuzz_rate, ends, callback);
+		auto result = search_for_ends(fuzz_range, fuzz_rate, part_index, ends, callback);
+
 		if (std::get<0>(result) != 0) {
 			auto left = callback(std::get<0>(result), true);
 			auto right = callback(std::get<1>(result), false);
-			auto end = ends[std::get<2>(result)];
+			auto &end = ends[std::get<2>(result)];
 
 			add.push_back(get_fuzz_part(
 				std::get<0>(result), std::get<1>(result),
-				*left, *right, *target, part_idx, end));
+				*left, *right, *target, part_index, end));
 		}
+	}
+
+	if (add.empty()) {
+		// no part is added
+		return std::unique_ptr<libaction::Human>(new libaction::Human(*target));
 	}
 
 	for (auto &part: target->body_parts()) {

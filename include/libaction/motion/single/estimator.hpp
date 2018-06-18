@@ -73,7 +73,7 @@ public:
 			throw std::runtime_error("fuzz_rate == 0");
 		}
 
-		std::function<libaction::Human*(size_t, bool)> fuzz_cb =
+		std::function<libaction::Human*(size_t, bool)> get_human =
 			[pos, length, &still_estimator, &callback, this]
 				(size_t offset, bool left) -> libaction::Human* {
 			if (left) {
@@ -99,7 +99,10 @@ public:
 			}
 		};
 
-		auto human = detail::fuzz::fuzz(fuzz_range, fuzz_rate, needed, fuzz_cb);
+		std::unique_ptr<libaction::Human> human;
+
+		if (get_human(0, false))
+			human = detail::fuzz::fuzz(fuzz_range, fuzz_rate, needed, get_human);
 
 		return get_human_pose(human);
 	}
