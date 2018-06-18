@@ -34,7 +34,7 @@ public:
 	inline Estimator()
 	{}
 
-	/// Estimate from a series of motion images.
+	/// Estimate for a single frame from a series of motion images.
 
 	/// @param[in]  pos         The current index of the frame, starting from 0.
 	/// @param[in]  length      The total number of frames. Must be greater than
@@ -51,7 +51,7 @@ public:
 	/// @param[in]  callback    A callback function allowing random access to
 	///                         the image frame at `pos`. The callback should
 	///                         return a valid pointer to the image, which can
-	///                         be passed to still_estimator.estimate().
+	///                         be passed to `still_estimator.estimate()`.
 	/// @return                 A map of humans from their index numbers.
 	/// @exception              std::runtime_error
 	template<typename Needed, typename StillEstimator, typename ImagePtr>
@@ -105,7 +105,7 @@ public:
 
 	/// Reset the status of Estimator.
 
-	///	This is necessary when the stream or parameter is changed.
+	///	This is necessary when the image stream is changed.
 	inline void reset()
 	{
 		still_poses.clear();
