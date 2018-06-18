@@ -34,7 +34,26 @@ public:
 	inline Estimator()
 	{}
 
-	/// TODO.
+	/// Estimate from a series of motion images.
+
+	/// @param[in]  pos         The current index of the frame, starting from 0.
+	/// @param[in]  length      The total number of frames. Must be greater than
+	///                         `pos`.
+	/// @param[in]  fuzz_range  The range of images used for fuzz estimation.
+	///                         The distance between the right frame and the
+	///                         left frame is at most `fuzz_range`.
+	/// @param[in]  fuzz_rate   The stride used for fuzz estimation. Must be
+	///                         greater than 0.
+	/// @param[in]  needed      An iterable sequence of BodyPart::PartIndex
+	///                         containing body parts that should be fuzz
+	///                         estimated if they are not directly available.
+	/// @param[in]  still_estimator An initialized human pose estimator.
+	/// @param[in]  callback    A callback function allowing random access to
+	///                         the image frame at `pos`. The callback should
+	///                         return a valid pointer to the image, which can
+	///                         be passed to still_estimator.estimate().
+	/// @return                 A map of humans from their index numbers.
+	/// @exception              std::runtime_error
 	template<typename Needed, typename StillEstimator, typename ImagePtr>
 	inline std::unique_ptr<std::unordered_map<size_t, libaction::Human>>
 	estimate(
@@ -48,6 +67,9 @@ public:
 		}
 		if (length <= pos) {
 			throw std::runtime_error("length <= pos");
+		}
+		if (fuzz_rate == 0) {
+			throw std::runtime_error("fuzz_rate == 0");
 		}
 
 		std::function<libaction::Human*(size_t, bool)> fuzz_cb =
@@ -98,9 +120,14 @@ private:
 		StillEstimator &still_estimator,
 		std::function<ImagePtr(size_t pos)> &callback)
 	{
-		auto image = callback(pos);
-		auto humans = still_estimator.estimate(*image);
-		image.reset();
+		decltype(still_estimator.estimate(*callback(pos))) humans;
+
+		{
+			auto image = callback(pos);
+			if (!image)
+				throw std::runtime_error("callback returned an empty pointer");
+			humans = still_estimator.estimate(*image);
+		}
 
 		std::unique_ptr<libaction::Human> human;
 
