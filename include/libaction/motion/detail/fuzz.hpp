@@ -210,6 +210,8 @@ inline libaction::BodyPart get_fuzz_part(
 {
 	float score = 1.0;
 
+	// left
+
 	float x_left_end = 0, y_left_end = 0;
 	for (auto end_index: end) {
 		auto &body_part = left.body_parts().at(end_index);
@@ -223,11 +225,16 @@ inline libaction::BodyPart get_fuzz_part(
 	float y_left_part = left_body_part.y();
 	score *= left_body_part.score();
 
-	auto left_angle = std::atan2(
-		(y_left_part - y_left_end), (x_left_part - x_left_end));
+	auto x_left_diff = x_left_part - x_left_end;
+	auto y_left_diff = y_left_part - y_left_end;
+
+	float left_angle = 0.0f;
+	if (y_left_diff != 0.0f || x_left_diff != 0.0f)
+		left_angle = std::atan2(y_left_diff, x_left_diff);
 	auto left_length = std::sqrt(
-		(x_left_part - x_left_end) * (x_left_part - x_left_end) +
-		(y_left_part - y_left_end) * (y_left_part - y_left_end));
+		x_left_diff * x_left_diff + y_left_diff * y_left_diff);
+
+	// right
 
 	float x_right_end = 0, y_right_end = 0;
 	for (auto end_index: end) {
@@ -242,11 +249,23 @@ inline libaction::BodyPart get_fuzz_part(
 	float y_right_part = right_body_part.y();
 	score *= right_body_part.score();
 
-	auto right_angle = std::atan2(
-		(y_right_part - y_right_end), (x_right_part - x_right_end));
+	auto x_right_diff = x_right_part - x_right_end;
+	auto y_right_diff = y_right_part - y_right_end;
+
+	float right_angle = 0.0f;
+	if (y_right_diff != 0.0f || x_right_diff != 0.0f)
+		right_angle = std::atan2(y_right_diff, x_right_diff);
 	auto right_length = std::sqrt(
-		(x_right_part - x_right_end) * (x_right_part - x_right_end) +
-		(y_right_part - y_right_end) * (y_right_part - y_right_end));
+		x_right_diff * x_right_diff + y_right_diff * y_right_diff);
+
+	// fix angle
+
+	if (y_left_diff == 0.0f && x_left_diff == 0.0f && (y_right_diff != 0.0f || x_right_diff != 0.0f))
+		left_angle = right_angle;
+	else if (y_right_diff == 0.0f && x_right_diff == 0.0f && (y_left_diff != 0.0f || x_left_diff != 0.0f))
+		right_angle = left_angle;
+
+	// calculate results
 
 	auto loff = static_cast<float>(left_offset);
 	auto roff = static_cast<float>(right_offset);
