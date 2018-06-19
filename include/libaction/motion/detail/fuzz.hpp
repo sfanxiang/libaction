@@ -307,7 +307,7 @@ inline float get_single_fuzz_score(
 	// left
 	score *= left.body_parts().at(target_part_index).score();
 
-	// right;
+	// right
 	score *= right.body_parts().at(target_part_index).score();
 
 	// offset
