@@ -367,13 +367,13 @@ inline libaction::BodyPart get_double_fuzz_part(
 		right_angle = left_angle;
 
 	// use a reasonable angle for calculating the weighted average
-	if (left_angle > 0 && right_angle < 0) {
+	if (left_angle > 0.0f && right_angle < 0.0f) {
 		if (left_angle - right_angle > (std::acos(-1.0f) /* pi */ )) {
-			right_angle += 2 * (std::acos(-1.0f) /* pi */ );
+			right_angle += 2.0f * (std::acos(-1.0f) /* pi */ );
 		}
-	} else if (left_angle < 0 && right_angle > 0) {
+	} else if (left_angle < 0.0f && right_angle > 0.0f) {
 		if (right_angle - left_angle > (std::acos(-1.0f) /* pi */ )) {
-			left_angle += 2 * (std::acos(-1.0f) /* pi */ );
+			left_angle += 2.0f * (std::acos(-1.0f) /* pi */ );
 		}
 	}
 
