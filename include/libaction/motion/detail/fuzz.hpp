@@ -546,8 +546,8 @@ inline std::unique_ptr<libaction::Human> fuzz(
 				target->body_parts()[rule] = body_part;
 			} else {
 				target = std::unique_ptr<libaction::Human>(
-					new libaction::Human({ body_part })
-				);
+					new libaction::Human(std::vector<libaction::BodyPart>{
+						body_part }));
 			}
 		} else {
 			break;

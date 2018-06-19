@@ -103,25 +103,7 @@ int main(int argc, char *argv[])
 		for (size_t i = 0; i < num_images; i++) {
 			// do estimation
 			auto humans = motion_estimator.estimate(i, num_images,
-				fuzz_range, fuzz_rate,
-				std::vector<libaction::BodyPart::PartIndex>{
-					libaction::BodyPart::PartIndex::eye_r,
-					libaction::BodyPart::PartIndex::eye_l,
-					libaction::BodyPart::PartIndex::nose,
-					libaction::BodyPart::PartIndex::shoulder_r,
-					libaction::BodyPart::PartIndex::shoulder_l,
-					libaction::BodyPart::PartIndex::elbow_r,
-					libaction::BodyPart::PartIndex::elbow_l,
-					libaction::BodyPart::PartIndex::wrist_r,
-					libaction::BodyPart::PartIndex::wrist_l,
-					libaction::BodyPart::PartIndex::hip_r,
-					libaction::BodyPart::PartIndex::hip_l,
-					libaction::BodyPart::PartIndex::knee_r,
-					libaction::BodyPart::PartIndex::knee_l,
-					libaction::BodyPart::PartIndex::ankle_r,
-					libaction::BodyPart::PartIndex::ankle_l
-				},
-				still_estimator, callback);
+				fuzz_range, fuzz_rate, still_estimator, callback);
 
 			// show results
 			std::cout << "======== Image #" << i << " ========" << std::endl;
