@@ -44,9 +44,6 @@ public:
 	///                         left frame is at most `fuzz_range`.
 	/// @param[in]  fuzz_rate   The stride used for fuzz estimation. Must be
 	///                         greater than 0.
-	/// @param[in]  needed      An iterable sequence of BodyPart::PartIndex
-	///                         containing body parts that should be fuzz
-	///                         estimated if they are not directly available.
 	/// @param[in]  still_estimator An initialized human pose estimator.
 	/// @param[in]  callback    A callback function allowing random access to
 	///                         the image frame at `pos`. The callback should
@@ -55,11 +52,10 @@ public:
 	/// @return                 A map of humans from their index numbers.
 	/// @exception              std::runtime_error
 	/// @sa                     still::single::Estimator
-	template<typename Needed, typename StillEstimator, typename ImagePtr>
+	template<typename StillEstimator, typename ImagePtr>
 	inline std::unique_ptr<std::unordered_map<size_t, libaction::Human>>
 	estimate(
 		size_t pos, size_t length, size_t fuzz_range, size_t fuzz_rate,
-		const Needed &needed,
 		StillEstimator &still_estimator,
 		std::function<ImagePtr(size_t pos)> &callback
 	) {
@@ -73,36 +69,34 @@ public:
 			throw std::runtime_error("fuzz_rate == 0");
 		}
 
-		std::function<libaction::Human*(size_t, bool)> get_human =
-			[pos, length, &still_estimator, &callback, this]
-				(size_t offset, bool left) -> libaction::Human* {
+		std::function<std::pair<bool, libaction::Human*>(size_t, bool)> fuzz_cb
+			= [pos, length, &still_estimator, &callback, this]
+				(size_t offset, bool left) -> std::pair<bool, libaction::Human*>
+		{
 			if (left) {
 				if (offset > pos) {
-					return nullptr;
+					return std::make_pair(false, nullptr);
 				} else {
 					auto it = still_poses.find(pos - offset);
 					if (it == still_poses.end()) {
 						it = estimate_still_pose(pos - offset, still_estimator, callback);
 					}
-					return it->second.get();
+					return std::make_pair(true, it->second.get());
 				}
 			} else {
 				if (offset >= length - pos) {
-					return nullptr;
+					return std::make_pair(false, nullptr);
 				} else {
 					auto it = still_poses.find(pos + offset);
 					if (it == still_poses.end()) {
 						it = estimate_still_pose(pos + offset, still_estimator, callback);
 					}
-					return it->second.get();
+					return std::make_pair(true, it->second.get());
 				}
 			}
 		};
 
-		std::unique_ptr<libaction::Human> human;
-
-		if (get_human(0, false))
-			human = detail::fuzz::fuzz(fuzz_range, fuzz_rate, needed, get_human);
+		auto human = detail::fuzz::fuzz(fuzz_range, fuzz_rate, fuzz_cb);
 
 		return get_human_pose(human);
 	}

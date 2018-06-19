@@ -32,73 +32,156 @@ namespace fuzz
 namespace
 {
 
-inline std::vector<std::vector<libaction::BodyPart::PartIndex>>
-other_ends(libaction::BodyPart::PartIndex end)
+inline const std::vector<std::pair<
+	libaction::BodyPart::PartIndex, libaction::BodyPart::PartIndex>> &
+double_recipe()
 {
-	using index = libaction::BodyPart::PartIndex;
+	using id = libaction::BodyPart::PartIndex;
 
-	switch (end) {
-	case index::nose:
-		return { { index::neck }, { index::eye_r, index::eye_l } };
-		break;
-	case index::neck:
-		return { { index::nose }, { index::shoulder_r, index::shoulder_l } };
-		break;
-	case index::shoulder_r:
-		return { { index::shoulder_l }, { index::hip_r }, { index::nose } };
-		break;
-	case index::elbow_r:
-		return { { index::shoulder_r }, { index::wrist_r } };
-		break;
-	case index::wrist_r:
-		return { { index::elbow_r } };
-		break;
-	case index::shoulder_l:
-		return { { index::shoulder_r }, { index::hip_l }, { index::nose } };
-		break;
-	case index::elbow_l:
-		return { { index::shoulder_l }, { index::wrist_l } };
-		break;
-	case index::wrist_l:
-		return { { index::elbow_l } };
-		break;
-	case index::hip_r:
-		return { { index::hip_l }, { index::shoulder_r }, { index::knee_r } };
-		break;
-	case index::knee_r:
-		return { { index::hip_r } };
-		break;
-	case index::ankle_r:
-		return { { index::knee_r } };
-		break;
-	case index::hip_l:
-		return { { index::hip_r }, { index::shoulder_l }, { index::knee_l } };
-		break;
-	case index::knee_l:
-		return { { index::hip_l } };
-		break;
-	case index::ankle_l:
-		return { { index::knee_l } };
-		break;
-	case index::eye_r:
-		return { { index::eye_l }, { index::nose } };
-		break;
-	case index::eye_l:
-		return { { index::eye_r }, { index::nose } };
-		break;
-	case index::ear_r:
-		return { { index::ear_l }, { index::nose } };
-		break;
-	case index::ear_l:
-		return { { index::ear_r }, { index::nose } };
-		break;
-	case index::end:
-		return {};
-		break;
-	default:
-		return {};
-		break;
-	}
+	// avoid the id:: prefix
+	auto nose = id::nose;
+	auto neck = id::neck;
+	auto shoulder_r = id::shoulder_r;
+	auto elbow_r = id::elbow_r;
+	auto wrist_r = id::wrist_r;
+	auto shoulder_l = id::shoulder_l;
+	auto elbow_l = id::elbow_l;
+	auto wrist_l = id::wrist_l;
+	auto hip_r = id::hip_r;
+	auto knee_r = id::knee_r;
+	auto ankle_r = id::ankle_r;
+	auto hip_l = id::hip_l;
+	auto knee_l = id::knee_l;
+	auto ankle_l = id::ankle_l;
+	auto eye_r = id::eye_r;
+	auto eye_l = id::eye_l;
+	auto ear_r = id::ear_r;
+	auto ear_l = id::ear_l;
+
+	static const std::vector<std::pair<
+		libaction::BodyPart::PartIndex, libaction::BodyPart::PartIndex
+	>> recipe{
+		// same name
+		{ eye_r, eye_l },
+		{ eye_l, eye_r },
+		{ shoulder_r, shoulder_l },
+		{ shoulder_l, shoulder_r },
+		{ ear_r, ear_l },
+		{ ear_l, ear_r },
+		{ hip_r, hip_l },
+		{ hip_l, hip_r },
+		// same side / both no side
+		{ eye_r, ear_r },
+		{ eye_l, ear_l },
+		{ knee_r, ankle_r },
+		{ knee_l, ankle_l },
+		{ shoulder_r, hip_r },
+		{ shoulder_l, hip_l },
+		{ hip_r, knee_r },
+		{ hip_l, knee_l },
+		{ knee_r, hip_r },
+		{ knee_l, hip_l },
+		{ hip_r, shoulder_r },
+		{ hip_l, shoulder_l },
+		{ ankle_r, knee_r },
+		{ ankle_l, knee_l },
+		{ ear_r, eye_r },
+		{ ear_l, eye_l },
+		{ shoulder_r, elbow_r },
+		{ shoulder_l, elbow_l },
+		{ elbow_r, shoulder_r },
+		{ elbow_l, shoulder_l },
+		{ nose, neck },
+		{ neck, nose },
+		{ elbow_r, wrist_r },
+		{ elbow_l, wrist_l },
+		{ wrist_r, elbow_r },
+		{ wrist_l, elbow_l },
+		// side -> no side
+		{ eye_r, nose },
+		{ eye_l, nose },
+		{ ear_r, nose },
+		{ ear_l, nose },
+		{ shoulder_r, neck },
+		{ shoulder_l, neck },
+		{ eye_r, neck },
+		{ eye_l, neck },
+		{ ear_r, neck },
+		{ ear_l, neck },
+		{ hip_r, neck },
+		{ hip_l, neck },
+		// no side -> side
+		{ neck, shoulder_r },
+		{ neck, shoulder_l },
+		{ nose, ear_r },
+		{ nose, ear_l },
+		{ nose, eye_r },
+		{ nose, eye_l },
+		{ neck, ear_r },
+		{ neck, ear_l },
+		{ neck, eye_r },
+		{ neck, eye_l },
+		// different sides
+		{ eye_r, ear_l },
+		{ eye_l, ear_r },
+		{ shoulder_r, hip_l },
+		{ shoulder_l, hip_r },
+		{ hip_r, shoulder_l },
+		{ hip_l, shoulder_r },
+		{ ear_r, eye_l },
+		{ ear_l, eye_r }
+	};
+
+	return recipe;
+}
+
+inline const std::vector<libaction::BodyPart::PartIndex> &
+single_recipe()
+{
+	using id = libaction::BodyPart::PartIndex;
+
+	// avoid the id:: prefix
+	auto nose = id::nose;
+	auto neck = id::neck;
+	auto shoulder_r = id::shoulder_r;
+	auto elbow_r = id::elbow_r;
+	auto wrist_r = id::wrist_r;
+	auto shoulder_l = id::shoulder_l;
+	auto elbow_l = id::elbow_l;
+	auto wrist_l = id::wrist_l;
+	auto hip_r = id::hip_r;
+	auto knee_r = id::knee_r;
+	auto ankle_r = id::ankle_r;
+	auto hip_l = id::hip_l;
+	auto knee_l = id::knee_l;
+	auto ankle_l = id::ankle_l;
+	auto eye_r = id::eye_r;
+	auto eye_l = id::eye_l;
+	auto ear_r = id::ear_r;
+	auto ear_l = id::ear_l;
+
+	static const std::vector<libaction::BodyPart::PartIndex> recipe{
+		ankle_r,
+		ankle_l,
+		neck,
+		shoulder_r,
+		shoulder_l,
+		hip_r,
+		hip_l,
+		knee_r,
+		knee_l,
+		nose,
+		eye_r,
+		eye_l,
+		ear_r,
+		ear_l,
+		elbow_r,
+		elbow_l,
+		wrist_r,
+		wrist_l
+	};
+
+	return recipe;
 }
 
 inline bool has_part(const libaction::Human &human,
@@ -107,12 +190,11 @@ inline bool has_part(const libaction::Human &human,
 	return human.body_parts().find(part_index) != human.body_parts().end();
 }
 
-inline bool has_end(const libaction::Human &human,
-	const std::vector<libaction::BodyPart::PartIndex> &end)
+inline bool has_parts(const libaction::Human &human,
+	const std::vector<libaction::BodyPart::PartIndex> &parts)
 {
-	for (auto &end_part: end) {
-		if (human.body_parts().find(end_part) ==
-				human.body_parts().end()) {
+	for (auto &part: parts) {
+		if (human.body_parts().find(part) == human.body_parts().end()) {
 			return false;
 		}
 	}
@@ -120,113 +202,140 @@ inline bool has_end(const libaction::Human &human,
 }
 
 template<typename HumanPtr>
-inline std::tuple<size_t, size_t, size_t> search_for_ends(
+inline std::pair<size_t, size_t> search_for_parts(
 	size_t fuzz_range, size_t fuzz_rate,
-	libaction::BodyPart::PartIndex part_index,
-	const std::vector<std::vector<libaction::BodyPart::PartIndex>> &ends,
-	std::function<HumanPtr(size_t relative_pos, bool left)> &callback)
+	const std::vector<libaction::BodyPart::PartIndex> &parts,
+	std::function<std::pair<bool, HumanPtr>(size_t relative_pos, bool left)>
+		&callback)
 {
 	if (fuzz_rate == 0) {
 		throw std::runtime_error("fuzz_rate == 0");
 	}
 
-	std::tuple<size_t, size_t, size_t> result{0, 0, 0};
-
 	if (fuzz_range < fuzz_rate || fuzz_range - fuzz_rate < fuzz_rate) {
 		// impossible
-		return result;
+		return std::make_pair(0, 0);
 	}
 
-	size_t ends_index_next = 0;
-
-	// look into each end
-	for (auto &end: ends) {
-		size_t ends_index = ends_index_next;
-		ends_index_next++;
-
-		// try to find the first pose that contains this end on the left
-		bool found = false;
-		size_t loff = fuzz_rate;
-		for (; loff < fuzz_range &&
-				(std::get<0>(result) == 0 ||
-				std::get<0>(result) + std::get<1>(result) > loff + fuzz_rate);
-			loff += fuzz_rate)
-		{
-			auto human = callback(loff, true);
-			if (!human) {
-				// reached the left bound
-				found = false;
-				break;
-			}
-			if (has_part(*human, part_index) && has_end(*human, end)) {
-				found = true;
-				break;
-			}
+	// try to find the first pose that contains parts on the left
+	bool found = false;
+	size_t loff = fuzz_rate;
+	for (; loff < fuzz_range; loff += fuzz_rate)
+	{
+		bool valid;
+		HumanPtr human;
+		std::tie(valid, human) = callback(loff, true);
+		if (!valid) {
+			// reached the left bound
+			found = false;
+			break;
 		}
-		if (!found)
-			continue;
-
-		// try to find the first pose that contains this end on the right
-		found = false;
-		size_t roff = fuzz_rate;
-		for(; roff <= fuzz_range - loff &&
-				(std::get<0>(result) == 0 ||
-				std::get<0>(result) + std::get<1>(result) > loff + roff);
-			roff += fuzz_rate)
-		{
-			auto human = callback(roff, false);
-			if (!human) {
-				// reached the right bound
-				found = false;
-				break;
-			}
-			if (has_part(*human, part_index) && has_end(*human, end)) {
-				found = true;
-				break;
-			}
-		}
-		if (!found)
-			continue;
-
-		result = std::make_tuple(loff, roff, ends_index);
-
-		if (loff == fuzz_rate && roff == fuzz_rate) {
-			// no better finding possible
+		if (human && has_parts(*human, parts)) {
+			found = true;
 			break;
 		}
 	}
+	if (!found)
+		return std::make_pair(0, 0);
 
-	return result;
+	// try to find the first pose that contains parts on the right
+	found = false;
+	size_t roff = fuzz_rate;
+	for(; roff <= fuzz_range - loff; roff += fuzz_rate)
+	{
+		bool valid;
+		HumanPtr human;
+		std::tie(valid, human) = callback(roff, false);
+		if (!valid) {
+			// reached the right bound
+			found = false;
+			break;
+		}
+		if (human && has_parts(*human, parts)) {
+			found = true;
+			break;
+		}
+	}
+	if (!found)
+		return std::make_pair(0, 0);
+
+	return std::make_pair(loff, roff);
 }
 
-inline libaction::BodyPart get_fuzz_part(
+inline float get_double_fuzz_score(
 	size_t left_offset,
 	size_t right_offset,
 	const libaction::Human &left,
 	const libaction::Human &right,
 	const libaction::Human &target,
-	libaction::BodyPart::PartIndex part_index,
-	const std::vector<libaction::BodyPart::PartIndex> &end)
+	libaction::BodyPart::PartIndex source_part_index,
+	libaction::BodyPart::PartIndex target_part_index,
+	float initial_score = 1.0f)
 {
-	float score = 1.0;
+	float &score = initial_score;
 
 	// left
+	score *= left.body_parts().at(source_part_index).score();
+	score *= left.body_parts().at(target_part_index).score();
 
-	float x_left_end = 0, y_left_end = 0;
-	for (auto end_index: end) {
-		auto &body_part = left.body_parts().at(end_index);
-		x_left_end += body_part.x() / static_cast<float>(end.size());
-		y_left_end += body_part.y() / static_cast<float>(end.size());
-		score *= body_part.score();
-	}
+	// right
+	score *= right.body_parts().at(source_part_index).score();
+	score *= right.body_parts().at(target_part_index).score();
 
-	auto &left_body_part = left.body_parts().at(part_index);
-	float x_left_part = left_body_part.x();
-	float y_left_part = left_body_part.y();
-	score *= left_body_part.score();
+	// target
+	score *= target.body_parts().at(source_part_index).score();
 
-	auto x_left_diff = x_left_part - x_left_end;
-	auto y_left_diff = y_left_part - y_left_end;
+	// offset
+	auto loff = static_cast<float>(left_offset);
+	auto roff = static_cast<float>(right_offset);
+	auto toff = loff + roff;
+	score /= toff;
+
+	return score;
+}
+
+inline float get_single_fuzz_score(
+	size_t left_offset,
+	size_t right_offset,
+	const libaction::Human &left,
+	const libaction::Human &right,
+	libaction::BodyPart::PartIndex target_part_index,
+	float initial_score = 1.0f / 3.0f)
+{
+	float &score = initial_score;
+
+	// left
+	score *= left.body_parts().at(target_part_index).score();
+
+	// right;
+	score *= right.body_parts().at(target_part_index).score();
+
+	// offset
+	auto loff = static_cast<float>(left_offset);
+	auto roff = static_cast<float>(right_offset);
+	auto toff = loff + roff;
+	score /= toff;
+
+	return score;
+}
+
+inline libaction::BodyPart get_double_fuzz_part(
+	size_t left_offset,
+	size_t right_offset,
+	const libaction::Human &left,
+	const libaction::Human &right,
+	const libaction::Human &target,
+	libaction::BodyPart::PartIndex source_part_index,
+	libaction::BodyPart::PartIndex target_part_index,
+	float score)
+{
+	// left
+
+	auto &left_source_body_part = left.body_parts().at(source_part_index);
+	auto &left_target_body_part = left.body_parts().at(target_part_index);
+
+	auto x_left_diff = left_target_body_part.x() - left_source_body_part.x();
+	auto y_left_diff = left_target_body_part.y() - left_source_body_part.y();
 
 	float left_angle = 0.0f;
 	if (y_left_diff != 0.0f || x_left_diff != 0.0f)
@@ -236,21 +345,11 @@ inline libaction::BodyPart get_fuzz_part(
 
 	// right
 
-	float x_right_end = 0, y_right_end = 0;
-	for (auto end_index: end) {
-		auto &body_part = right.body_parts().at(end_index);
-		x_right_end += body_part.x() / static_cast<float>(end.size());
-		y_right_end += body_part.y() / static_cast<float>(end.size());
-		score *= body_part.score();
-	}
+	auto &right_source_body_part = right.body_parts().at(source_part_index);
+	auto &right_target_body_part = right.body_parts().at(target_part_index);
 
-	auto &right_body_part = right.body_parts().at(part_index);
-	float x_right_part = right_body_part.x();
-	float y_right_part = right_body_part.y();
-	score *= right_body_part.score();
-
-	auto x_right_diff = x_right_part - x_right_end;
-	auto y_right_diff = y_right_part - y_right_end;
+	auto x_right_diff = right_target_body_part.x() - right_source_body_part.x();
+	auto y_right_diff = right_target_body_part.y() - right_source_body_part.y();
 
 	float right_angle = 0.0f;
 	if (y_right_diff != 0.0f || x_right_diff != 0.0f)
@@ -274,72 +373,188 @@ inline libaction::BodyPart get_fuzz_part(
 	auto angle = left_angle / toff * roff + right_angle / toff * loff;
 	auto length = left_length / toff * roff + right_length / toff * loff;
 
-	float x_end = 0, y_end = 0;
-	for (auto end_index: end) {
-		auto &body_part = target.body_parts().at(end_index);
-		x_end += body_part.x() / static_cast<float>(end.size());
-		y_end += body_part.y() / static_cast<float>(end.size());
-		score *= body_part.score();
-	}
+	auto &source_body_part = target.body_parts().at(source_part_index);
+	float x = source_body_part.x() + length * std::cos(angle);
+	float y = source_body_part.y() + length * std::sin(angle);
 
-	float x = x_end + length * std::cos(angle);
-	float y = y_end + length * std::sin(angle);
+	return libaction::BodyPart(target_part_index, x, y, score);
+}
 
-	return libaction::BodyPart(part_index, x, y, score);
+inline libaction::BodyPart get_single_fuzz_part(
+	size_t left_offset,
+	size_t right_offset,
+	const libaction::Human &left,
+	const libaction::Human &right,
+	libaction::BodyPart::PartIndex target_part_index,
+	float score)
+{
+	auto &left_body_part = left.body_parts().at(target_part_index);
+	auto &right_body_part = right.body_parts().at(target_part_index);
+
+	auto loff = static_cast<float>(left_offset);
+	auto roff = static_cast<float>(right_offset);
+	auto toff = loff + roff;
+
+	float x = left_body_part.x() / toff * roff + right_body_part.x() / toff * loff;
+	float y = left_body_part.y() / toff * roff + right_body_part.y() / toff * loff;
+
+	return libaction::BodyPart(target_part_index, x, y, score);
 }
 
 }
 
-template<typename Needed, typename HumanPtr>
+template<typename HumanPtr>
 inline std::unique_ptr<libaction::Human> fuzz(
 	size_t fuzz_range, size_t fuzz_rate,
-	const Needed &needed,
-	std::function<HumanPtr(size_t relative_pos, bool left)> &callback)
+	std::function<std::pair<bool, HumanPtr>(size_t relative_pos, bool left)>
+		&callback)
 {
-	HumanPtr target = callback(0, false);
-	if (!target) {
-		throw std::runtime_error("fuzz target not found");
-	}
+	std::unique_ptr<libaction::Human> target;
 
-	std::vector<libaction::BodyPart> add;
-
-	for (auto &part_index: needed) {
-		if (has_part(*target, part_index)) {
-			// if part_index already exists in target, skip
-			continue;
+	{
+		bool valid;
+		HumanPtr original;
+		std::tie(valid, original) = callback(0, false);
+		if (!valid) {
+			throw std::runtime_error("fuzz target not found");
 		}
 
-		auto all_ends = other_ends(part_index);
-		decltype(all_ends) ends;	// ends that exist in target
-		for (auto &end: all_ends) {
-			if (has_end(*target, end)) {
-				ends.push_back(end);
+		if (original) {
+			target = std::unique_ptr<libaction::Human>(new libaction::Human(
+				*original));
+		}
+	}
+
+	const auto &dbl = double_recipe();
+	const auto &sing = single_recipe();
+
+	while (true) {
+		std::pair<
+			std::pair<size_t, size_t>,
+			std::pair<
+				libaction::BodyPart::PartIndex, libaction::BodyPart::PartIndex>
+		> dbl_candidate;
+		std::pair<
+			std::pair<size_t, size_t>,
+			libaction::BodyPart::PartIndex
+		> sing_candidate;
+
+		bool use_dbl = false, use_sing = false;
+		float score = -1.0f;
+
+		if (target) {
+			// double recipe
+			for (auto &rule: dbl) {
+				if (has_part(*target, rule.second) || !has_part(*target, rule.first))
+					continue;
+
+				std::vector<libaction::BodyPart::PartIndex> search_for{
+					rule.first, rule.second };
+				auto search_result = search_for_parts(fuzz_range, fuzz_rate, search_for, callback);
+				if (search_result.first == 0)	// not found
+					continue;
+
+				auto left = callback(search_result.first, true).second;
+				auto right = callback(search_result.second, false).second;
+
+				auto current_score = get_double_fuzz_score(
+					search_result.first,
+					search_result.second,
+					*left,
+					*right,
+					*target,
+					rule.first,
+					rule.second
+				);
+				if (current_score > score) {
+					score = current_score;
+					use_dbl = true;
+					dbl_candidate = std::make_pair(
+						std::make_pair(search_result.first, search_result.second),
+						rule
+					);
+				}
 			}
 		}
 
-		auto result = search_for_ends(fuzz_range, fuzz_rate, part_index, ends, callback);
+		// single recipe
+		for (auto &rule: sing) {
+			if (target && has_part(*target, rule))
+				continue;
 
-		if (std::get<0>(result) != 0) {
-			auto left = callback(std::get<0>(result), true);
-			auto right = callback(std::get<1>(result), false);
-			auto &end = ends[std::get<2>(result)];
+			auto search_result = search_for_parts(fuzz_range, fuzz_rate, { rule }, callback);
+			if (search_result.first == 0)	// not found
+				continue;
 
-			add.push_back(get_fuzz_part(
-				std::get<0>(result), std::get<1>(result),
-				*left, *right, *target, part_index, end));
+			auto left = callback(search_result.first, true).second;
+			auto right = callback(search_result.second, false).second;
+
+			auto current_score = get_single_fuzz_score(
+				search_result.first,
+				search_result.second,
+				*left,
+				*right,
+				rule
+			);
+			if (current_score > score) {
+				score = current_score;
+				use_dbl = false;
+				use_sing = true;
+				sing_candidate = std::make_pair(
+					std::make_pair(search_result.first, search_result.second),
+					rule
+				);
+			}
+		}
+
+		if (target && use_dbl) {
+			auto &pos = dbl_candidate.first;
+			auto &rule = dbl_candidate.second;
+
+			auto left = callback(pos.first, true).second;
+			auto right = callback(pos.second, false).second;
+
+			auto body_part = get_double_fuzz_part(
+				pos.first,
+				pos.second,
+				*left,
+				*right,
+				*target,
+				rule.first,
+				rule.second,
+				score
+			);
+
+			target->body_parts()[rule.second] = body_part;
+		} else if (use_sing) {
+			auto &pos = sing_candidate.first;
+			auto &rule = sing_candidate.second;
+
+			auto left = callback(pos.first, true).second;
+			auto right = callback(pos.second, false).second;
+
+			auto body_part = get_single_fuzz_part(
+				pos.first,
+				pos.second,
+				*left,
+				*right,
+				rule,
+				score
+			);
+
+			if (target) {
+				target->body_parts()[rule] = body_part;
+			} else {
+				target = std::unique_ptr<libaction::Human>(
+					new libaction::Human({ body_part })
+				);
+			}
+		} else {
+			break;
 		}
 	}
 
-	if (add.empty()) {
-		// no part is added
-		return std::unique_ptr<libaction::Human>(new libaction::Human(*target));
-	}
-
-	for (auto &part: target->body_parts()) {
-		add.push_back(part.second);
-	}
-
-	return std::unique_ptr<libaction::Human>(new libaction::Human(add));
+	return target;
 }
 
 }

@@ -41,6 +41,16 @@ public:
 		return body_parts_;
 	}
 
+	/// Body parts.
+
+	/// @return                 An unordered map mapping part index to its
+	///                         respective body part.
+	/// @sa                     BodyPart::PartIndex and BodyPart
+	inline std::unordered_map<BodyPart::PartIndex, BodyPart> &body_parts()
+	{
+		return body_parts_;
+	}
+
 private:
 	std::unordered_map<BodyPart::PartIndex, BodyPart> body_parts_{};
 };
