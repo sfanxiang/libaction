@@ -32,6 +32,8 @@ namespace fuzz
 namespace
 {
 
+// TODO: rel_recipe, abs_double_recipe, abs_single_recipe
+
 inline const std::vector<std::pair<
 	libaction::BodyPart::PartIndex, libaction::BodyPart::PartIndex>> &
 double_recipe()
@@ -357,12 +359,23 @@ inline libaction::BodyPart get_double_fuzz_part(
 	auto right_length = std::sqrt(
 		x_right_diff * x_right_diff + y_right_diff * y_right_diff);
 
-	// fix angle
+	// fix angles
 
 	if (y_left_diff == 0.0f && x_left_diff == 0.0f && (y_right_diff != 0.0f || x_right_diff != 0.0f))
 		left_angle = right_angle;
 	else if (y_right_diff == 0.0f && x_right_diff == 0.0f && (y_left_diff != 0.0f || x_left_diff != 0.0f))
 		right_angle = left_angle;
+
+	// use a reasonable angle for calculating the weighted average
+	if (left_angle > 0 && right_angle < 0) {
+		if (left_angle - right_angle > (std::acos(-1.0f) /* pi */ )) {
+			right_angle += 2 * (std::acos(-1.0f) /* pi */ );
+		}
+	} else if (left_angle < 0 && right_angle > 0) {
+		if (right_angle - left_angle > (std::acos(-1.0f) /* pi */ )) {
+			left_angle += 2 * (std::acos(-1.0f) /* pi */ );
+		}
+	}
 
 	// calculate results
 

@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
 
 	try {
 		const size_t channels = 3;
-		const size_t fuzz_range = 4;
+		const size_t fuzz_range = 7;
 		const size_t fuzz_rate = 1;
 
 		const std::string image_file_prefix = argv[1];
@@ -115,8 +115,8 @@ int main(int argc, char *argv[])
 						<< part.second.x() * image_height << ","
 						<< part.second.y() * image_width << std::endl;
 				}
-				std::cout << std::endl;
 			}
+			std::cout << std::endl;
 		}
 
 		auto time_after = std::chrono::steady_clock::now();
