@@ -41,7 +41,7 @@ for root, dirs, files in os.walk('include'):
             content = content[comment_end:]
 
             # remove old guards
-            if len(content) >= 5 and content[0].startswith('#ifndef ') and \
+            if len(content) >= 4 and content[0].startswith('#ifndef ') and \
                     content[1].startswith('#define ') and \
                     content[2] == '' and \
                     content[-2] == '' and \
