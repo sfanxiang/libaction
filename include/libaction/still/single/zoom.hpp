@@ -5,8 +5,8 @@
  * This Source Code Form is "Incompatible With Secondary Licenses", as
  * defined by the Mozilla Public License, v. 2.0. */
 
-#ifndef LIBACTION__MOTION__DETAIL__ZOOM_HPP_
-#define LIBACTION__MOTION__DETAIL__ZOOM_HPP_
+#ifndef LIBACTION__STILL__SINGLE__ZOOM_HPP_
+#define LIBACTION__STILL__SINGLE__ZOOM_HPP_
 
 #include "../../human.hpp"
 #include "../../detail/image.hpp"
@@ -15,9 +15,9 @@
 
 namespace libaction
 {
-namespace motion
+namespace still
 {
-namespace detail
+namespace single
 {
 namespace zoom
 {
@@ -57,6 +57,15 @@ inline std::pair<float, float> coord_translate(
 
 }
 
+/// Estimate from a known estimation with zoom-in reestimation.
+
+/// @param[in]  image       The full image for estimation.
+/// @param[in]  human       The result from a previous estimation. Only a single
+///                         human (with at least one body part) is supported.
+/// @param[in]  estimator_callback  Callback which, when called, returns the
+///                         same person as `human`, as found in the given image.
+/// @return                 A human inferred from the image.
+/// @exception              std::runtime_error
 template<typename ImagePtr, typename HumanPtr, typename Image>
 inline libaction::Human zoom_estimate(
 	const ImagePtr &image,
