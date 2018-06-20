@@ -57,7 +57,7 @@ public:
 	estimate(
 		size_t pos, size_t length, size_t fuzz_range, size_t fuzz_rate,
 		StillEstimator &still_estimator,
-		std::function<ImagePtr(size_t pos)> &callback
+		const std::function<ImagePtr(size_t pos)> &callback
 	) {
 		if (length == 0) {
 			throw std::runtime_error("length == 0");
@@ -69,9 +69,9 @@ public:
 			throw std::runtime_error("fuzz_rate == 0");
 		}
 
-		std::function<std::pair<bool, libaction::Human*>(size_t, bool)> fuzz_cb
+		std::function<std::pair<bool, const libaction::Human *>(size_t, bool)> fuzz_cb
 			= [pos, length, &still_estimator, &callback, this]
-				(size_t offset, bool left) -> std::pair<bool, libaction::Human*>
+				(size_t offset, bool left) -> std::pair<bool, const libaction::Human *>
 		{
 			if (left) {
 				if (offset > pos) {
@@ -116,7 +116,7 @@ private:
 	template<typename StillEstimator, typename ImagePtr>
 	inline decltype(still_poses)::iterator estimate_still_pose(size_t pos,
 		StillEstimator &still_estimator,
-		std::function<ImagePtr(size_t pos)> &callback)
+		const std::function<ImagePtr(size_t pos)> &callback)
 	{
 		decltype(still_estimator.estimate(*callback(pos))) humans;
 

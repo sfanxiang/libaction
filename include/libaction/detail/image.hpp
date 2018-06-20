@@ -5,17 +5,16 @@
  * This Source Code Form is "Incompatible With Secondary Licenses", as
  * defined by the Mozilla Public License, v. 2.0. */
 
-#ifndef LIBACTION__STILL__DETAIL__IMAGE_HPP_
-#define LIBACTION__STILL__DETAIL__IMAGE_HPP_
+#ifndef LIBACTION__DETAIL__IMAGE_HPP_
+#define LIBACTION__DETAIL__IMAGE_HPP_
 
 #include <boost/multi_array.hpp>
+#include <algorithm>
 #include <cstdint>
 #include <memory>
 #include <stdexcept>
 
 namespace libaction
-{
-namespace still
 {
 namespace detail
 {
@@ -93,7 +92,40 @@ std::unique_ptr<boost::multi_array<typename Input::element, 3>> resize(
 	return target_image;
 }
 
+template<typename Input>
+std::unique_ptr<boost::multi_array<typename Input::element, 3>> crop(
+	const Input &image,
+	size_t x, size_t y,
+	size_t target_height, size_t target_width)
+{
+	if (image.num_dimensions() != 3)
+		throw std::runtime_error("invalid image");
+
+	auto height = image.shape()[0];
+	auto width = image.shape()[1];
+	auto channels = image.shape()[2];
+
+	size_t x1 = std::min(x, height);
+	size_t y1 = std::min(y, width);
+	size_t x2 = std::min(x1 + target_height, height);
+	size_t y2 = std::min(y1 + target_width, width);
+
+	auto target_image = std::unique_ptr<
+		boost::multi_array<typename Input::element, 3>>(
+			new boost::multi_array<typename Input::element, 3>(
+				boost::extents[x2 - x1][y2 - y1][channels]));
+
+	for (size_t i = x1; i < x2; i++) {
+		for (size_t j = y1; j < y2; j++) {
+			for (size_t k = 0; k < channels; k++) {
+				(*target_image)[i - x1][j - y1][k] = image[i][j][k];
+			}
+		}
+	}
+
+	return target_image;
 }
+
 }
 }
 }

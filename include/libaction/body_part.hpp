@@ -63,14 +63,14 @@ public:
 	/// @return                 Index of the body part.
 	inline PartIndex part_index() const { return part_index_; }
 
-	/// X-coordinate (top-down).
+	/// X-coordinate (top-down, [0.0, 1.0)).
 
-	/// @return                 X-coordinate (top-down).
+	/// @return                 X-coordinate (top-down, [0.0, 1.0)).
 	inline float x() const { return x_; }
 
-	/// Y-coordinate (left-right).
+	/// Y-coordinate (left-right, [0.0, 1.0)).
 
-	/// @return                 Y-coordinate (left-right).
+	/// @return                 Y-coordinate (left-right, [0.0, 1.0)).
 	inline float y() const { return y_; }
 
 	/// Confidence of the estimation.

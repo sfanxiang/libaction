@@ -205,7 +205,7 @@ template<typename HumanPtr>
 inline std::pair<size_t, size_t> search_for_parts(
 	size_t fuzz_range, size_t fuzz_rate,
 	const std::vector<libaction::BodyPart::PartIndex> &parts,
-	std::function<std::pair<bool, HumanPtr>(size_t relative_pos, bool left)>
+	const std::function<std::pair<bool, HumanPtr>(size_t relative_pos, bool left)>
 		&callback)
 {
 	if (fuzz_rate == 0) {
@@ -417,7 +417,7 @@ inline libaction::BodyPart get_absolute_fuzz_part(
 template<typename HumanPtr>
 inline std::unique_ptr<libaction::Human> fuzz(
 	size_t fuzz_range, size_t fuzz_rate,
-	std::function<std::pair<bool, HumanPtr>(size_t relative_pos, bool left)>
+	const std::function<std::pair<bool, HumanPtr>(size_t relative_pos, bool left)>
 		&callback)
 {
 	std::unique_ptr<libaction::Human> target;

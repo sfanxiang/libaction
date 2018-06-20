@@ -10,8 +10,8 @@
 
 #include "../../body_part.hpp"
 #include "../../human.hpp"
+#include "../../detail/image.hpp"
 #include "../detail/array.hpp"
-#include "../detail/image.hpp"
 #include "detail/posenet_parts.hpp"
 
 #include <boost/multi_array.hpp>
@@ -135,7 +135,7 @@ public:
 		const Image &image)
 	{
 		namespace libaction_array = libaction::still::detail::array;
-		namespace libaction_image = libaction::still::detail::image;
+		namespace libaction_image = libaction::detail::image;
 
 		if (image.num_dimensions() != 3)
 			throw std::runtime_error("wrong number of dimensions");
