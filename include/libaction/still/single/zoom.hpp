@@ -8,6 +8,7 @@
 #ifndef LIBACTION__STILL__SINGLE__ZOOM_HPP_
 #define LIBACTION__STILL__SINGLE__ZOOM_HPP_
 
+#include "../../body_part.hpp"
 #include "../../human.hpp"
 #include "../../detail/image.hpp"
 
@@ -62,15 +63,18 @@ inline std::pair<float, float> coord_translate(
 /// @param[in]  image       The full image for estimation.
 /// @param[in]  human       The result from a previous estimation. Only a single
 ///                         human (with at least one body part) is supported.
+/// @param[in]  human_hints Hints of the location of the human, usually results
+///                         from the frames around this image (in a video).
 /// @param[in]  estimator_callback  Callback which, when called, returns the
 ///                         same person as `human`, as found in the given image.
 /// @return                 A human inferred from the image.
 /// @exception              std::runtime_error
-template<typename ImagePtr, typename HumanPtr, typename Image>
+template<typename ImagePtr, typename HumanPtr1, typename HumanPtr2, typename Image>
 inline libaction::Human zoom_estimate(
 	const ImagePtr &image,
 	const libaction::Human &human,
-	const std::function<HumanPtr(const Image &image)> &estimator_callback
+	const std::vector<HumanPtr1> &human_hints,
+	const std::function<HumanPtr2(const Image &image)> &estimator_callback
 ) {
 	if (image->num_dimensions() != 3)
 		throw std::runtime_error("image must have 3 dimensions");
@@ -86,15 +90,46 @@ inline libaction::Human zoom_estimate(
 	float y1 = human.body_parts().begin()->second.y();
 	float y2 = y1;
 
+	float mid_x = 0.0f, mid_y = 0.0f;
+
 	for (auto &part: human.body_parts()) {
 		x1 = std::min(x1, part.second.x());
 		x2 = std::max(x2, part.second.x());
 		y1 = std::min(y1, part.second.y());
 		y2 = std::max(y2, part.second.y());
+
+		mid_x += part.second.x() / static_cast<float>(human.body_parts().size());
+		mid_y += part.second.y() / static_cast<float>(human.body_parts().size());
 	}
 
-	float x_expand = x2 - x1;
-	float y_expand = y2 - y1;
+	float height = 0.0f, width = 0.0f;
+
+	for (auto &hint: human_hints) {
+		float x1 = hint->body_parts().begin()->second.x();
+		float x2 = x1;
+		float y1 = hint->body_parts().begin()->second.y();
+		float y2 = y1;
+
+		for (auto &part: hint->body_parts()) {
+			x1 = std::min(x1, part.second.x());
+			x2 = std::max(x2, part.second.x());
+			y1 = std::min(y1, part.second.y());
+			y2 = std::max(y2, part.second.y());
+		}
+
+		height = std::max(height, x2 - x1);
+		width = std::max(width, y2 - y1);
+	}
+
+	float bound_x1 = std::min(x1, std::min(x2 - height, mid_x - height / 2.0f));
+	float bound_x2 = std::max(x2, std::max(x1 + height, mid_x + height / 2.0f));
+	float bound_y1 = std::min(y1, std::min(y2 - width, mid_y - width / 2.0f));
+	float bound_y2 = std::max(y2, std::max(y1 + width, mid_y + width / 2.0f));
+
+	std::tie(x1, x2, y1, y2) = std::tie(bound_x1, bound_x2, bound_y1, bound_y2);
+
+	float x_expand = (x2 - x1) / 4.0f;
+	float y_expand = (y2 - y1) / 4.0f;
 
 	x1 -= x_expand;
 	x2 += x_expand;
@@ -141,6 +176,7 @@ inline libaction::Human zoom_estimate(
 	if (x1_i == x2_i || y1_i == y2_i)
 		return human;
 
+	// Turn x2_i and y2_i into past-the-end indices.
 	x2_i++;
 	y2_i++;
 
