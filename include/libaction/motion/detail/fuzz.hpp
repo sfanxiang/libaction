@@ -32,11 +32,9 @@ namespace fuzz
 namespace
 {
 
-// TODO: rel_recipe, abs_double_recipe, abs_single_recipe
-
 inline const std::vector<std::pair<
 	libaction::BodyPart::PartIndex, libaction::BodyPart::PartIndex>> &
-double_recipe()
+relative_recipe()
 {
 	using id = libaction::BodyPart::PartIndex;
 
@@ -138,7 +136,7 @@ double_recipe()
 }
 
 inline const std::vector<libaction::BodyPart::PartIndex> &
-single_recipe()
+absolute_recipe()
 {
 	using id = libaction::BodyPart::PartIndex;
 
@@ -264,7 +262,7 @@ inline std::pair<size_t, size_t> search_for_parts(
 	return std::make_pair(loff, roff);
 }
 
-inline float get_double_fuzz_score(
+inline float get_relative_fuzz_score(
 	size_t left_offset,
 	size_t right_offset,
 	const libaction::Human &left,
@@ -296,7 +294,7 @@ inline float get_double_fuzz_score(
 	return score;
 }
 
-inline float get_single_fuzz_score(
+inline float get_absolute_fuzz_score(
 	size_t left_offset,
 	size_t right_offset,
 	const libaction::Human &left,
@@ -321,7 +319,7 @@ inline float get_single_fuzz_score(
 	return score;
 }
 
-inline libaction::BodyPart get_double_fuzz_part(
+inline libaction::BodyPart get_relative_fuzz_part(
 	size_t left_offset,
 	size_t right_offset,
 	const libaction::Human &left,
@@ -393,7 +391,7 @@ inline libaction::BodyPart get_double_fuzz_part(
 	return libaction::BodyPart(target_part_index, x, y, score);
 }
 
-inline libaction::BodyPart get_single_fuzz_part(
+inline libaction::BodyPart get_absolute_fuzz_part(
 	size_t left_offset,
 	size_t right_offset,
 	const libaction::Human &left,
@@ -438,26 +436,26 @@ inline std::unique_ptr<libaction::Human> fuzz(
 		}
 	}
 
-	const auto &dbl = double_recipe();
-	const auto &sing = single_recipe();
+	const auto &relative = relative_recipe();
+	const auto &absolute = absolute_recipe();
 
 	while (true) {
 		std::pair<
 			std::pair<size_t, size_t>,
 			std::pair<
 				libaction::BodyPart::PartIndex, libaction::BodyPart::PartIndex>
-		> dbl_candidate;
+		> relative_candidate;
 		std::pair<
 			std::pair<size_t, size_t>,
 			libaction::BodyPart::PartIndex
-		> sing_candidate;
+		> absolute_candidate;
 
-		bool use_dbl = false, use_sing = false;
+		bool use_relative = false, use_absolute = false;
 		float score = -1.0f;
 
 		if (target) {
-			// double recipe
-			for (auto &rule: dbl) {
+			// relative recipe
+			for (auto &rule: relative) {
 				if (has_part(*target, rule.second) || !has_part(*target, rule.first))
 					continue;
 
@@ -470,7 +468,7 @@ inline std::unique_ptr<libaction::Human> fuzz(
 				auto left = callback(search_result.first, true).second;
 				auto right = callback(search_result.second, false).second;
 
-				auto current_score = get_double_fuzz_score(
+				auto current_score = get_relative_fuzz_score(
 					search_result.first,
 					search_result.second,
 					*left,
@@ -481,8 +479,8 @@ inline std::unique_ptr<libaction::Human> fuzz(
 				);
 				if (current_score > score) {
 					score = current_score;
-					use_dbl = true;
-					dbl_candidate = std::make_pair(
+					use_relative = true;
+					relative_candidate = std::make_pair(
 						std::make_pair(search_result.first, search_result.second),
 						rule
 					);
@@ -490,44 +488,46 @@ inline std::unique_ptr<libaction::Human> fuzz(
 			}
 		}
 
-		// single recipe
-		for (auto &rule: sing) {
-			if (target && has_part(*target, rule))
-				continue;
+		if (!use_relative) {
+			// absolute recipe
+			for (auto &rule: absolute) {
+				if (target && has_part(*target, rule))
+					continue;
 
-			auto search_result = search_for_parts(fuzz_range, fuzz_rate, { rule }, callback);
-			if (search_result.first == 0)	// not found
-				continue;
+				auto search_result = search_for_parts(fuzz_range, fuzz_rate, { rule }, callback);
+				if (search_result.first == 0)	// not found
+					continue;
 
-			auto left = callback(search_result.first, true).second;
-			auto right = callback(search_result.second, false).second;
+				auto left = callback(search_result.first, true).second;
+				auto right = callback(search_result.second, false).second;
 
-			auto current_score = get_single_fuzz_score(
-				search_result.first,
-				search_result.second,
-				*left,
-				*right,
-				rule
-			);
-			if (current_score > score) {
-				score = current_score;
-				use_dbl = false;
-				use_sing = true;
-				sing_candidate = std::make_pair(
-					std::make_pair(search_result.first, search_result.second),
+				auto current_score = get_absolute_fuzz_score(
+					search_result.first,
+					search_result.second,
+					*left,
+					*right,
 					rule
 				);
+				if (current_score > score) {
+					score = current_score;
+					use_relative = false;
+					use_absolute = true;
+					absolute_candidate = std::make_pair(
+						std::make_pair(search_result.first, search_result.second),
+						rule
+					);
+				}
 			}
 		}
 
-		if (target && use_dbl) {
-			auto &pos = dbl_candidate.first;
-			auto &rule = dbl_candidate.second;
+		if (target && use_relative) {
+			auto &pos = relative_candidate.first;
+			auto &rule = relative_candidate.second;
 
 			auto left = callback(pos.first, true).second;
 			auto right = callback(pos.second, false).second;
 
-			auto body_part = get_double_fuzz_part(
+			auto body_part = get_relative_fuzz_part(
 				pos.first,
 				pos.second,
 				*left,
@@ -539,14 +539,14 @@ inline std::unique_ptr<libaction::Human> fuzz(
 			);
 
 			target->body_parts()[rule.second] = body_part;
-		} else if (use_sing) {
-			auto &pos = sing_candidate.first;
-			auto &rule = sing_candidate.second;
+		} else if (use_absolute) {
+			auto &pos = absolute_candidate.first;
+			auto &rule = absolute_candidate.second;
 
 			auto left = callback(pos.first, true).second;
 			auto right = callback(pos.second, false).second;
 
-			auto body_part = get_single_fuzz_part(
+			auto body_part = get_absolute_fuzz_part(
 				pos.first,
 				pos.second,
 				*left,
