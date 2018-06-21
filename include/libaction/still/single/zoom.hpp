@@ -13,6 +13,7 @@
 #include "../../detail/image.hpp"
 
 #include <algorithm>
+#include <memory>
 
 namespace libaction
 {
@@ -69,21 +70,21 @@ inline std::pair<float, float> coord_translate(
 ///                         same person as `human`, as found in the given image.
 /// @return                 A human inferred from the image.
 /// @exception              std::runtime_error
-template<typename ImagePtr, typename HumanPtr1, typename HumanPtr2, typename Image>
-inline libaction::Human zoom_estimate(
-	const ImagePtr &image,
+template<typename Image1, typename HumanPtr1, typename HumanPtr2, typename Image2>
+inline std::unique_ptr<libaction::Human> zoom_estimate(
+	const Image1 &image,
 	const libaction::Human &human,
 	const std::vector<HumanPtr1> &human_hints,
-	const std::function<HumanPtr2(const Image &image)> &estimator_callback
+	const std::function<HumanPtr2(const Image2 &image)> &estimator_callback
 ) {
-	if (image->num_dimensions() != 3)
+	if (image.num_dimensions() != 3)
 		throw std::runtime_error("image must have 3 dimensions");
 
-	if (image->shape()[0] == 0 || image->shape()[1] == 0)
-		return human;
+	if (image.shape()[0] == 0 || image.shape()[1] == 0)
+		return std::unique_ptr<libaction::Human>(new libaction::Human(human));
 
 	if (human.body_parts().empty())
-		return human;
+		return std::unique_ptr<libaction::Human>(new libaction::Human(human));
 
 	float x1 = human.body_parts().begin()->second.x();
 	float x2 = x1;
@@ -105,6 +106,11 @@ inline libaction::Human zoom_estimate(
 	float height = 0.0f, width = 0.0f;
 
 	for (auto &hint: human_hints) {
+		if (!hint)
+			continue;
+		if (hint->body_parts().empty())
+			continue;
+
 		float x1 = hint->body_parts().begin()->second.x();
 		float x2 = x1;
 		float y1 = hint->body_parts().begin()->second.y();
@@ -141,18 +147,18 @@ inline libaction::Human zoom_estimate(
 	y1 = std::max(y1, +0.0f);
 	y2 = std::min(y2, 1.0f);
 
-	size_t x1_i = static_cast<size_t>(x1 * static_cast<float>(image->shape[0]));
-	size_t x2_i = static_cast<size_t>(x2 * static_cast<float>(image->shape[0]));
-	size_t y1_i = static_cast<size_t>(y1 * static_cast<float>(image->shape[1]));
-	size_t y2_i = static_cast<size_t>(y2 * static_cast<float>(image->shape[1]));
+	size_t x1_i = static_cast<size_t>(x1 * static_cast<float>(image.shape[0]));
+	size_t x2_i = static_cast<size_t>(x2 * static_cast<float>(image.shape[0]));
+	size_t y1_i = static_cast<size_t>(y1 * static_cast<float>(image.shape[1]));
+	size_t y2_i = static_cast<size_t>(y2 * static_cast<float>(image.shape[1]));
 
-	x1_i = std::min(x1_i, image->shape[0] - 1);
-	x2_i = std::max(std::min(x2_i, image->shape[0] - 1), x1_i);
-	y1_i = std::min(y1_i, image->shape[1] - 1);
-	y2_i = std::max(std::min(y2_i, image->shape[1] - 1), y1_i);
+	x1_i = std::min(x1_i, image.shape[0] - 1);
+	x2_i = std::max(std::min(x2_i, image.shape[0] - 1), x1_i);
+	y1_i = std::min(y1_i, image.shape[1] - 1);
+	y2_i = std::max(std::min(y2_i, image.shape[1] - 1), y1_i);
 
 	if (x1_i == x2_i) {
-		size_t change = image->shape()[0] / 3;
+		size_t change = image.shape()[0] / 3;
 		if (x1_i >= change)
 			x1_i -= change;
 		else
@@ -160,7 +166,7 @@ inline libaction::Human zoom_estimate(
 		x2_i += change;
 	}
 	if (y1_i == y2_i) {
-		size_t change = image->shape()[1] / 3;
+		size_t change = image.shape()[1] / 3;
 		if (y1_i >= change)
 			y1_i -= change;
 		else
@@ -168,41 +174,45 @@ inline libaction::Human zoom_estimate(
 		y2_i += change;
 	}
 
-	x1_i = std::min(x1_i, image->shape[0] - 1);
-	x2_i = std::max(std::min(x2_i, image->shape[0] - 1), x1_i);
-	y1_i = std::min(y1_i, image->shape[1] - 1);
-	y2_i = std::max(std::min(y2_i, image->shape[1] - 1), y1_i);
+	x1_i = std::min(x1_i, image.shape[0] - 1);
+	x2_i = std::max(std::min(x2_i, image.shape[0] - 1), x1_i);
+	y1_i = std::min(y1_i, image.shape[1] - 1);
+	y2_i = std::max(std::min(y2_i, image.shape[1] - 1), y1_i);
 
 	if (x1_i == x2_i || y1_i == y2_i)
-		return human;
+		return std::unique_ptr<libaction::Human>(new libaction::Human(human));
 
 	// Turn x2_i and y2_i into past-the-end indices.
 	x2_i++;
 	y2_i++;
 
-	auto cropped = libaction::detail::image::crop(*image,
+	auto cropped = libaction::detail::image::crop(image,
 		x1_i, y1_i, x2_i - x1_i, y2_i - y1_i);
 
 	if (cropped->shape()[0] == 0 || cropped->shape()[1] == 0)
-		return human;
+		return std::unique_ptr<libaction::Human>(new libaction::Human(human));
 
 	auto cropped_human = estimator_callback(*cropped);
 
-	auto new_human = human;
+	if (!cropped_human)
+		return std::unique_ptr<libaction::Human>(new libaction::Human(human));
+
+	auto new_human = std::unique_ptr<libaction::Human>(new libaction::Human(
+		human));
 	// use parts in cropped_human to update new_human
-	for (auto &part_pair: cropped_human.body_parts()) {
+	for (auto &part_pair: cropped_human->body_parts()) {
 		auto &part = part_pair.second;
 
-		auto find = new_human.body_parts().find(part.part_index());
+		auto find = new_human->body_parts().find(part.part_index());
 
-		if (find == new_human.body_parts().end()) {
+		if (find == new_human->body_parts().end()) {
 			auto coord = coord_translate(
 				part.x(), part.y(),
-				image->shape()[0], image->shape()[1],
+				image.shape()[0], image.shape()[1],
 				x1_i, y1_i,
 				cropped->shape()[0], cropped->shape()[1]);
 
-			new_human.body_parts()[part.part_index()] = libaction::BodyPart(
+			new_human->body_parts()[part.part_index()] = libaction::BodyPart(
 				part.part_index(),
 				coord.first, coord.second,
 				part.score()
@@ -210,7 +220,7 @@ inline libaction::Human zoom_estimate(
 		} else if (find->second.score() <= part.score()) {
 			auto coord = coord_translate(
 				part.x(), part.y(),
-				image->shape()[0], image->shape()[1],
+				image.shape()[0], image.shape()[1],
 				x1_i, y1_i,
 				cropped->shape()[0], cropped->shape()[1]);
 

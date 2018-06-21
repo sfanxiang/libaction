@@ -68,6 +68,8 @@ int main(int argc, char *argv[])
 		const size_t channels = 3;
 		const size_t fuzz_range = 7;
 		const size_t fuzz_rate = 1;
+		const size_t zoom_range = 10;
+		const size_t zoom_rate = 4;
 
 		const std::string image_file_prefix = argv[1];
 		const std::string image_file_suffix = argv[2];
@@ -103,7 +105,9 @@ int main(int argc, char *argv[])
 		for (size_t i = 0; i < num_images; i++) {
 			// do estimation
 			auto humans = motion_estimator.estimate(i, num_images,
-				fuzz_range, fuzz_rate, still_estimator, callback);
+				fuzz_range, fuzz_rate,
+				zoom_range, zoom_rate,
+				still_estimator, callback);
 
 			// show results
 			std::cout << "======== Image #" << i << " ========" << std::endl;
