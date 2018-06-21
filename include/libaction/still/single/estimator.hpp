@@ -190,11 +190,27 @@ public:
 		return humans;
 	}
 
+	/// Set score threshold to default.
+	void set_score_threshold()
+	{
+		part_score_threshold = default_score_threshold;
+	}
+
+	/// Set score threshold.
+
+	/// @param[in]  threshold   Score threshold.
+	void set_score_threshold(float threshold)
+	{
+		part_score_threshold = threshold;
+	}
+
 private:
 	const size_t output_stride = 16;
 	const size_t keypoints_size = 17;
 	const size_t part_count_threshold = 3;
-	const float part_score_threshold = 0.86;
+	const float default_score_threshold = 0.5f;
+
+	float part_score_threshold{default_score_threshold};
 
 	size_t model_height, model_width, model_channels;
 

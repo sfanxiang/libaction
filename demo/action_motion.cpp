@@ -68,8 +68,8 @@ int main(int argc, char *argv[])
 		const size_t channels = 3;
 		const size_t fuzz_range = 7;
 		const size_t fuzz_rate = 1;
-		const size_t zoom_range = 10;
-		const size_t zoom_rate = 4;
+		const size_t zoom_range = 3;
+		const size_t zoom_rate = 1;
 
 		const std::string image_file_prefix = argv[1];
 		const std::string image_file_suffix = argv[2];
@@ -81,7 +81,7 @@ int main(int argc, char *argv[])
 		const size_t graph_width = std::stoul(argv[8]);
 
 		if (num_images == 0) {
-			throw std::runtime_error("<number of images> is zero");
+			throw std::runtime_error("<number of images> is 0");
 		}
 
 		// initialize the single pose estimator
@@ -106,7 +106,7 @@ int main(int argc, char *argv[])
 			// do estimation
 			auto humans = motion_estimator.estimate(i, num_images,
 				fuzz_range, fuzz_rate,
-				zoom_range, zoom_rate,
+				true, zoom_range, zoom_rate,
 				still_estimator, callback);
 
 			// show results

@@ -45,10 +45,15 @@ public:
 	///                         `pos`.
 	/// @param[in]  fuzz_range  The range of images used for fuzz estimation.
 	///                         The distance between the right frame and the
-	///                         left frame is at most `fuzz_range`.
+	///                         left frame is at most `fuzz_range`. To turn off
+	///                         fuzz estimation, set `fuzz_range` to 0.
 	/// @param[in]  fuzz_rate   The stride used for fuzz estimation. Must be
 	///                         greater than 0.
+	/// @param[in]  zoom        Whether zoom estimation should be enabled.
 	/// @param[in]  zoom_range  The range of images used for zoom reestimation.
+	///                         If `zoom_range` is 0, or no useful image is
+	///                         found within the range, then a prebuilt zoom
+	///                         parameter is used.
 	/// @param[in]  zoom_rate   The stride used for zoom reestimation. Must be
 	///                         greater than 0.
 	/// @param[in]  still_estimator An initialized human pose estimator, whose
@@ -67,7 +72,7 @@ public:
 	estimate(
 		size_t pos, size_t length,
 		size_t fuzz_range, size_t fuzz_rate,
-		size_t zoom_range, size_t zoom_rate,
+		bool zoom, size_t zoom_range, size_t zoom_rate,
 		StillEstimator &still_estimator,
 		const std::function<ImagePtr(size_t pos)> &callback
 	) {
@@ -81,7 +86,7 @@ public:
 			throw std::runtime_error("zoom_rate == 0");
 
 		std::function<std::pair<bool, const libaction::Human *>(size_t, bool)> fuzz_cb
-			= [pos, length, zoom_range, zoom_rate, &still_estimator, &callback, this]
+			= [pos, length, zoom, zoom_range, zoom_rate, &still_estimator, &callback, this]
 				(size_t offset, bool left) -> std::pair<bool, const libaction::Human *>
 		{
 			size_t pos_ = pos;
@@ -112,7 +117,7 @@ public:
 
 			// pos does not exist in still_poses. We need to estimate it.
 
-			if (needs_zoom(pos, zoom_rate)) {
+			if (zoom && needs_zoom(pos, zoom_rate)) {
 				// the image at pos needs to be zoomed
 
 				ImagePtr image;	// image at pos
