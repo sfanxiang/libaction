@@ -31,7 +31,7 @@ build:
   - cp -R tensorflow/tensorflow/contrib/lite/downloads/flatbuffers/include/* /usr/local/include/
   - cp $(find tensorflow/tensorflow/contrib/lite/gen/lib -name "libtensorflow-lite.a") /usr/local/lib
   # build libaction
-  - meson build --buildtype release --werror --warnlevel 3 --default-library static
+  - meson build --buildtype release --werror --warnlevel 3
   - ninja -C build
   - doxygen
   - mv html docs
