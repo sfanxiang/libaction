@@ -13,6 +13,7 @@
 #include "../../still/single/zoom.hpp"
 #include "../detail/fuzz.hpp"
 
+#include <boost/multi_array.hpp>
 #include <algorithm>
 #include <cstdint>
 #include <functional>
@@ -50,11 +51,13 @@ public:
 	/// @param[in]  zoom_range  The range of images used for zoom reestimation.
 	/// @param[in]  zoom_rate   The stride used for zoom reestimation. Must be
 	///                         greater than 0.
-	/// @param[in]  still_estimator An initialized human pose estimator.
+	/// @param[in]  still_estimator An initialized human pose estimator, whose
+	///                             `estimate()` method must accept any image
+	///                             conforming to the Boost.MultiArray concept.
 	/// @param[in]  callback    A callback function allowing random access to
 	///                         the image frame at `pos`. The callback should
-	///                         return a valid pointer to the image, which can
-	///                         be passed to `still_estimator.estimate()`.
+	///                         return a valid pointer to the image, which must
+	///                         conform to the Boost.MultiArray concept.
 	/// @return                 A map of humans from their index numbers.
 	/// @exception              std::runtime_error
 	/// @sa                     still::single::Estimator and
@@ -81,7 +84,8 @@ public:
 			= [pos, length, zoom_range, zoom_rate, &still_estimator, &callback, this]
 				(size_t offset, bool left) -> std::pair<bool, const libaction::Human *>
 		{
-			size_t pos = pos;
+			size_t pos_ = pos;
+			size_t pos = pos_;
 
 			if (pos >= length)
 				return std::make_pair(false, nullptr);
@@ -172,19 +176,26 @@ public:
 					}
 
 					// zoom estimate
+					using zoom_cb_arg = boost::multi_array<typename
+						std::remove_reference<decltype(*image)>::type::element,
+						3
+					>;
+					std::function<std::unique_ptr<libaction::Human>
+						(const zoom_cb_arg&)> zoom_cb =
+					[&still_estimator] (const zoom_cb_arg &image_to_estimate) {
+						return estimate_still_pose_from_image(image_to_estimate,
+							still_estimator);
+					};
 					auto human = libaction::still::single::zoom::zoom_estimate(
-						*image, *unzoomed_it->second, hints,
-						std::bind(
-							&Estimator::estimate_still_pose_from_image,
-							std::placeholders::_1,
-							still_estimator
-						));
+						*image, *unzoomed_it->second, hints, zoom_cb);
 
 					// zoomed estimations for images which should be zoomed go
 					// to still_poses
-					still_poses.insert(std::make_pair(pos, human));
+					auto it = still_poses.insert(
+						std::make_pair(pos, std::move(human))
+					).first;
 
-					return std::make_pair(true, human.get());
+					return std::make_pair(true, it->second.get());
 				} else {
 					// no human found in unzoomed image
 					// impossible to do zoomed estimation
@@ -284,7 +295,7 @@ private:
 		auto it = estimate_still_pose_from_image_on(pos, *image,
 			still_estimator, poses);
 
-		return std::make_pair(image, it);
+		return std::make_pair(std::move(image), it);
 	}
 
 	/// Get the processed human pose to return to the user.

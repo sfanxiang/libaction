@@ -12,6 +12,7 @@
 #include "../../human.hpp"
 #include "../../detail/image.hpp"
 
+#include <boost/multi_array.hpp>
 #include <algorithm>
 #include <memory>
 
@@ -61,7 +62,8 @@ inline std::pair<float, float> coord_translate(
 
 /// Estimate from a known estimation with zoom-in reestimation.
 
-/// @param[in]  image       The full image for estimation.
+/// @param[in]  image       The full image for estimation, which should conform
+///                         to the Boost.MultiArray concept.
 /// @param[in]  human       The result from a previous estimation. Only a single
 ///                         human (with at least one body part) is supported.
 /// @param[in]  human_hints Hints of the location of the human, usually results
@@ -70,12 +72,14 @@ inline std::pair<float, float> coord_translate(
 ///                         same person as `human`, as found in the given image.
 /// @return                 A human inferred from the image.
 /// @exception              std::runtime_error
-template<typename Image1, typename HumanPtr1, typename HumanPtr2, typename Image2>
+template<typename Image, typename HumanPtr1, typename HumanPtr2>
 inline std::unique_ptr<libaction::Human> zoom_estimate(
-	const Image1 &image,
+	const Image &image,
 	const libaction::Human &human,
 	const std::vector<HumanPtr1> &human_hints,
-	const std::function<HumanPtr2(const Image2 &image)> &estimator_callback
+	const std::function<HumanPtr2(
+		const boost::multi_array<typename Image::element, 3> &image
+	)> &estimator_callback
 ) {
 	if (image.num_dimensions() != 3)
 		throw std::runtime_error("image must have 3 dimensions");
@@ -147,15 +151,15 @@ inline std::unique_ptr<libaction::Human> zoom_estimate(
 	y1 = std::max(y1, +0.0f);
 	y2 = std::min(y2, 1.0f);
 
-	size_t x1_i = static_cast<size_t>(x1 * static_cast<float>(image.shape[0]));
-	size_t x2_i = static_cast<size_t>(x2 * static_cast<float>(image.shape[0]));
-	size_t y1_i = static_cast<size_t>(y1 * static_cast<float>(image.shape[1]));
-	size_t y2_i = static_cast<size_t>(y2 * static_cast<float>(image.shape[1]));
+	size_t x1_i = static_cast<size_t>(x1 * static_cast<float>(image.shape()[0]));
+	size_t x2_i = static_cast<size_t>(x2 * static_cast<float>(image.shape()[0]));
+	size_t y1_i = static_cast<size_t>(y1 * static_cast<float>(image.shape()[1]));
+	size_t y2_i = static_cast<size_t>(y2 * static_cast<float>(image.shape()[1]));
 
-	x1_i = std::min(x1_i, image.shape[0] - 1);
-	x2_i = std::max(std::min(x2_i, image.shape[0] - 1), x1_i);
-	y1_i = std::min(y1_i, image.shape[1] - 1);
-	y2_i = std::max(std::min(y2_i, image.shape[1] - 1), y1_i);
+	x1_i = std::min(x1_i, image.shape()[0] - 1);
+	x2_i = std::max(std::min(x2_i, image.shape()[0] - 1), x1_i);
+	y1_i = std::min(y1_i, image.shape()[1] - 1);
+	y2_i = std::max(std::min(y2_i, image.shape()[1] - 1), y1_i);
 
 	if (x1_i == x2_i) {
 		size_t change = image.shape()[0] / 3;
@@ -174,10 +178,10 @@ inline std::unique_ptr<libaction::Human> zoom_estimate(
 		y2_i += change;
 	}
 
-	x1_i = std::min(x1_i, image.shape[0] - 1);
-	x2_i = std::max(std::min(x2_i, image.shape[0] - 1), x1_i);
-	y1_i = std::min(y1_i, image.shape[1] - 1);
-	y2_i = std::max(std::min(y2_i, image.shape[1] - 1), y1_i);
+	x1_i = std::min(x1_i, image.shape()[0] - 1);
+	x2_i = std::max(std::min(x2_i, image.shape()[0] - 1), x1_i);
+	y1_i = std::min(y1_i, image.shape()[1] - 1);
+	y2_i = std::max(std::min(y2_i, image.shape()[1] - 1), y1_i);
 
 	if (x1_i == x2_i || y1_i == y2_i)
 		return std::unique_ptr<libaction::Human>(new libaction::Human(human));
