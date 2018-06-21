@@ -67,7 +67,10 @@ private:
 		if (!model)
 			throw std::runtime_error("failed to build model");
 
-		tflite::InterpreterBuilder(*model, resolver)(&interpreter);
+		if (threads > 0)
+			tflite::InterpreterBuilder(*model, resolver)(&interpreter, threads);
+		else
+			tflite::InterpreterBuilder(*model, resolver)(&interpreter);
 
 		if (!interpreter)
 			throw std::runtime_error("failed to build interpreter");
