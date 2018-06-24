@@ -203,24 +203,20 @@ inline bool has_parts(const libaction::Human &human,
 
 template<typename HumanPtr>
 inline std::pair<size_t, size_t> search_for_parts(
-	size_t fuzz_range, size_t fuzz_rate,
+	size_t fuzz_range,
 	const std::vector<libaction::BodyPart::PartIndex> &parts,
 	const std::function<std::pair<bool, HumanPtr>(size_t relative_pos, bool left)>
 		&callback)
 {
-	if (fuzz_rate == 0) {
-		throw std::runtime_error("fuzz_rate == 0");
-	}
-
-	if (fuzz_range < fuzz_rate || fuzz_range - fuzz_rate < fuzz_rate) {
+	if (fuzz_range < 2) {
 		// impossible
 		return std::make_pair(0, 0);
 	}
 
 	// try to find the first pose that contains parts on the left
 	bool found = false;
-	size_t loff = fuzz_rate;
-	for (; loff < fuzz_range; loff += fuzz_rate)
+	size_t loff = 1;
+	for (; loff < fuzz_range; loff += 1)
 	{
 		bool valid;
 		HumanPtr human;
@@ -240,8 +236,8 @@ inline std::pair<size_t, size_t> search_for_parts(
 
 	// try to find the first pose that contains parts on the right
 	found = false;
-	size_t roff = fuzz_rate;
-	for(; roff <= fuzz_range - loff; roff += fuzz_rate)
+	size_t roff = 1;
+	for(; roff <= fuzz_range - loff; roff += 1)
 	{
 		bool valid;
 		HumanPtr human;
@@ -416,7 +412,7 @@ inline libaction::BodyPart get_absolute_fuzz_part(
 
 template<typename HumanPtr>
 inline std::unique_ptr<libaction::Human> fuzz(
-	size_t fuzz_range, size_t fuzz_rate,
+	size_t fuzz_range,
 	const std::function<std::pair<bool, HumanPtr>(size_t relative_pos, bool left)>
 		&callback)
 {
@@ -461,7 +457,7 @@ inline std::unique_ptr<libaction::Human> fuzz(
 
 				std::vector<libaction::BodyPart::PartIndex> search_for{
 					rule.first, rule.second };
-				auto search_result = search_for_parts(fuzz_range, fuzz_rate, search_for, callback);
+				auto search_result = search_for_parts(fuzz_range, search_for, callback);
 				if (search_result.first == 0)	// not found
 					continue;
 
@@ -494,7 +490,7 @@ inline std::unique_ptr<libaction::Human> fuzz(
 				if (target && has_part(*target, rule))
 					continue;
 
-				auto search_result = search_for_parts(fuzz_range, fuzz_rate, { rule }, callback);
+				auto search_result = search_for_parts(fuzz_range, { rule }, callback);
 				if (search_result.first == 0)	// not found
 					continue;
 

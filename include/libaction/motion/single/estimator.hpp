@@ -50,8 +50,6 @@ public:
 	///                         The distance between the right frame and the
 	///                         left frame is at most `fuzz_range`. To turn off
 	///                         fuzz estimation, set `fuzz_range` to 0.
-	/// @param[in]  fuzz_rate   The stride used for fuzz estimation. Must be
-	///                         greater than 0.
 	/// @param[in]  zoom        Whether zoom estimation should be enabled.
 	/// @param[in]  zoom_range  The range of images used for zoom reestimation.
 	///                         If `zoom_range` is 0, or no useful image is
@@ -75,7 +73,7 @@ public:
 	inline std::unique_ptr<std::unordered_map<size_t, libaction::Human>>
 	estimate(
 		size_t pos, size_t length,
-		size_t fuzz_range, size_t fuzz_rate,
+		size_t fuzz_range,
 		bool zoom, size_t zoom_range, size_t zoom_rate,
 		const std::vector<StillEstimator*> &still_estimators,
 		const std::function<ImagePtr(size_t pos)> &callback
@@ -84,8 +82,6 @@ public:
 			throw std::runtime_error("length == 0");
 		if (length <= pos)
 			throw std::runtime_error("length <= pos");
-		if (fuzz_rate == 0)
-			throw std::runtime_error("fuzz_rate == 0");
 		if (zoom_rate == 0)
 			throw std::runtime_error("zoom_rate == 0");
 		if (still_estimators.empty())
@@ -142,7 +138,7 @@ public:
 				still_estimators, callback, offset, left);
 		};
 
-		auto human = detail::fuzz::fuzz(fuzz_range, fuzz_rate, fuzz_cb);
+		auto human = detail::fuzz::fuzz(fuzz_range, fuzz_cb);
 
 		return get_human_pose(human);
 	}
