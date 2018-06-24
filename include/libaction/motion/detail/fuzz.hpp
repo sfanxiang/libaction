@@ -17,7 +17,7 @@
 #include <functional>
 #include <memory>
 #include <stdexcept>
-#include <tuple>
+#include <utility>
 #include <vector>
 
 namespace libaction
@@ -408,6 +408,26 @@ inline libaction::BodyPart get_absolute_fuzz_part(
 	return libaction::BodyPart(target_part_index, x, y, score);
 }
 
+}
+
+inline std::pair<size_t, size_t>
+get_fuzz_lr(size_t pos, size_t length, size_t fuzz_range)
+{
+	size_t l = pos;
+	size_t r = pos;
+
+	if (fuzz_range != 0) {
+		if (pos >= fuzz_range - 1)
+			l = pos - (fuzz_range - 1);
+		else
+			l = 0;
+		if (length - pos > fuzz_range - 1)
+			r = pos + (fuzz_range - 1);
+		else
+			r = length - 1;
+	}
+
+	return std::make_pair(l, r);
 }
 
 template<typename HumanPtr>

@@ -94,35 +94,28 @@ public:
 			std::unordered_set<size_t>
 				frames_unzoomed_1, frames_zoomed, frames_unzoomed_2;
 
-			size_t fuzz_l = pos;
-			size_t fuzz_r = pos;
-
-			if (fuzz_range != 0) {
-				if (pos >= fuzz_range - 1)
-					fuzz_l = pos - (fuzz_range - 1);
-				else
-					fuzz_l = 0;
-				if (length - pos > fuzz_range - 1)
-					fuzz_r = pos + (fuzz_range - 1);
-				else
-					fuzz_r = length - 1;
-			}
+			size_t fuzz_l, fuzz_r;
+			std::tie(fuzz_l, fuzz_r) =
+				detail::fuzz::get_fuzz_lr(pos, length, fuzz_range);
 
 			for (size_t i = fuzz_l; i <= fuzz_r; i++) {
 				frames_unzoomed_2.insert(i);
 			}
 
-			for (size_t i = fuzz_l; i <= fuzz_r; i++) {
-				if (needs_zoom(i, zoom_rate)) {
-					size_t zoom_l = (pos >= zoom_range ? pos - zoom_range : 0);
-					size_t zoom_r = (length - pos > zoom_range ? pos + zoom_range : length - 1);
+			if (zoom) {
+				for (size_t i = fuzz_l; i <= fuzz_r; i++) {
+					if (needs_zoom(zoom, i, zoom_rate)) {
+						size_t zoom_l, zoom_r;
+						std::tie(zoom_l, zoom_r) = libaction::still::single
+							::zoom::get_zoom_lr(pos, length, zoom_range);
 
-					for (size_t j = zoom_l; j <= zoom_r; j++) {
-						frames_unzoomed_2.erase(j);
-						frames_unzoomed_1.insert(j);
+						for (size_t j = zoom_l; j <= zoom_r; j++) {
+							frames_unzoomed_2.erase(j);
+							frames_unzoomed_1.insert(j);
+						}
+
+						frames_zoomed.insert(i);
 					}
-
-					frames_zoomed.insert(i);
 				}
 			}
 
@@ -160,9 +153,9 @@ private:
 	// otherwise poses estimated on their unzoomed image
 	std::unordered_map<size_t, std::unique_ptr<libaction::Human>> still_poses{};
 
-	static constexpr inline bool needs_zoom(size_t pos, size_t zoom_rate)
+	static constexpr inline bool needs_zoom(bool zoom, size_t pos, size_t zoom_rate)
 	{
-		return (zoom_rate != 0) && (pos % zoom_rate == 0);
+		return zoom && (zoom_rate != 0) && (pos % zoom_rate == 0);
 	}
 
 	template<typename ImagePtr>
@@ -224,6 +217,19 @@ private:
 	}
 
 	template<typename StillEstimator, typename ImagePtr>
+	void concurrent_preestimate(
+		size_t zoom_range,
+		const std::vector<StillEstimator*> &still_estimators,
+		const std::function<ImagePtr(size_t pos)> &callback,
+		std::unordered_set<size_t> frames_unzoomed_1,
+		std::unordered_set<size_t> frames_zoomed,
+		std::unordered_set<size_t> frames_unzoomed_2,
+		std::mutex mutex)
+	{
+
+	}
+
+	template<typename StillEstimator, typename ImagePtr>
 	std::pair<bool, const libaction::Human *>
 	fuzz_callback(size_t pos, size_t length,
 		bool zoom, size_t zoom_range, size_t zoom_rate,
@@ -260,7 +266,7 @@ private:
 
 		// pos does not exist in still_poses. We need to estimate it.
 
-		if (zoom && needs_zoom(pos, zoom_rate)) {
+		if (needs_zoom(zoom, pos, zoom_rate)) {
 			// the image at pos needs to be zoomed
 
 			ImagePtr image;	// image at pos
@@ -280,8 +286,10 @@ private:
 
 				// now prepare the hints for a zoomed estimation
 
-				size_t l = (pos >= zoom_range ? pos - zoom_range : 0);
-				size_t r = (length - pos > zoom_range ? pos + zoom_range : length - 1);
+				size_t l, r;
+				std::tie(l, r) = libaction::still::single::zoom::get_zoom_lr(
+					pos, length, zoom_range);
+
 				std::vector<const libaction::Human *> hints;
 
 				// make all unzoomed estimations available within zoom_range
@@ -290,7 +298,7 @@ private:
 						continue;
 
 					decltype(still_poses)::iterator it;
-					if (needs_zoom(i, zoom_rate)) {
+					if (needs_zoom(zoom, i, zoom_rate)) {
 						// unzoomed estimations for images which should be
 						// zoomed go to unzoomed_still_poses
 

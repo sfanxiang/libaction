@@ -15,6 +15,7 @@
 #include <boost/multi_array.hpp>
 #include <algorithm>
 #include <memory>
+#include <utility>
 
 namespace libaction
 {
@@ -58,6 +59,15 @@ inline std::pair<float, float> coord_translate(
 	return {x3, y3};
 }
 
+}
+
+inline std::pair<size_t, size_t>
+get_zoom_lr(size_t pos, size_t length, size_t zoom_range)
+{
+	size_t l = (pos >= zoom_range ? pos - zoom_range : 0);
+	size_t r = (length - pos > zoom_range ? pos + zoom_range : length - 1);
+
+	return std::make_pair(l, r);
 }
 
 /// Estimate from a known estimation with zoom-in reestimation.
