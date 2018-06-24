@@ -67,7 +67,6 @@ int main(int argc, char *argv[])
 	try {
 		const size_t channels = 3;
 		const size_t fuzz_range = 7;
-		const size_t fuzz_rate = 1;
 		const size_t zoom_range = 3;
 		const size_t zoom_rate = 1;
 
@@ -105,7 +104,7 @@ int main(int argc, char *argv[])
 		for (size_t i = 0; i < num_images; i++) {
 			// do estimation
 			auto humans = motion_estimator.estimate(i, num_images,
-				fuzz_range, fuzz_rate,
+				fuzz_range,
 				true, zoom_range, zoom_rate,
 				std::vector<decltype(still_estimator)*>{ &still_estimator },
 				callback);
