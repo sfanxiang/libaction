@@ -77,7 +77,7 @@ public:
 		size_t pos, size_t length,
 		size_t fuzz_range, size_t fuzz_rate,
 		bool zoom, size_t zoom_range, size_t zoom_rate,
-		const std::vector<StillEstimator&> &still_estimators,
+		const std::vector<StillEstimator*> &still_estimators,
 		const std::function<ImagePtr(size_t pos)> &callback
 	) {
 		if (length == 0)
@@ -231,11 +231,11 @@ private:
 	std::pair<bool, const libaction::Human *>
 	fuzz_callback(size_t pos, size_t length,
 		bool zoom, size_t zoom_range, size_t zoom_rate,
-		std::vector<StillEstimator&> &still_estimators,
+		const std::vector<StillEstimator*> &still_estimators,
 		const std::function<ImagePtr(size_t pos)> &callback,
 		size_t offset, bool left)
 	{
-		auto &still_estimator = *still_estimators.begin();
+		auto &still_estimator = **still_estimators.begin();
 
 		if (pos >= length)
 			return std::make_pair(false, nullptr);
