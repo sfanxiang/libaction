@@ -100,11 +100,12 @@ public:
 		if (still_estimators.size() > 1) {
 			// multi-thread support (preprocessing)
 
-			// a task is removed from the queue only if it is certain to finish
-			// without dependending on any unfinished task
-
 			std::unordered_set<size_t> unzoomed_used, zoomed_used;	// pos
-			std::list<std::pair<size_t, bool>> queue;	// pos, zoom
+			std::list<std::pair<size_t, bool>> queue;	// pos, zoomed
+
+			// A task is removed from the queue only if it is certain to finish
+			// without dependending on any unfinished task. If a task is in the
+			// queue, then it has not been claimed yet.
 
 			size_t fuzz_l, fuzz_r;
 			std::tie(fuzz_l, fuzz_r) =
@@ -121,14 +122,16 @@ public:
 					for (size_t j = zoom_l; j <= zoom_r; j++) {
 						if (needs_zoom(zoom, j, zoom_rate)) {
 							if (unzoomed_still_poses.find(j) == unzoomed_still_poses.end() &&
-									unzoomed_used.find(j) == unzoomed_used.end())
+									unzoomed_used.find(j) == unzoomed_used.end()) {
 								unzoomed_used.insert(j);
 								queue.push_back({ j, false });
+							}
 						} else {
 							if (still_poses.find(j) == still_poses.end() &&
-									unzoomed_used.find(j) == unzoomed_used.end())
-								unzoomed_used.insert({ j, false });
+									unzoomed_used.find(j) == unzoomed_used.end()) {
+								unzoomed_used.insert(j);
 								queue.push_back({ j, false });
+							}
 						}
 					}
 
@@ -137,34 +140,97 @@ public:
 				} else if (!needs_zoom(zoom, i, zoom_rate) &&
 						still_poses.find(i) == still_poses.end() &&
 						unzoomed_used.find(i) == unzoomed_used.end()) {
+					unzoomed_used.insert(i);
 					queue.push_back({ i, false });
 				}
 			}
+
+			// add extra tasks to make multithread truly effective
 
 			size_t extra =
 				still_estimators.size() - (queue.size() % still_estimators.size());
 			if (extra == still_estimators.size())
 				extra = 0;
 
-			// TODO: fill in the queue with extra, remember to look at used
+			for (size_t i = fuzz_r + 1; ; ) {
+				if (extra == 0)
+					break;
 
-			// TODO: if queue is empty, do nothing here!
+				if (needs_zoom(zoom, i, zoom_rate) &&
+						still_poses.find(i) == still_poses.end() &&
+						zoomed_used.find(i) == zoomed_used.end()) {
+					size_t zoom_l, zoom_r;
+					std::tie(zoom_l, zoom_r) = libaction::still::single
+						::zoom::get_zoom_lr(i, length, zoom_range);
 
-			std::mutex mutex;
-			std::condition_variable cv;
-			std::vector<std::thread> threads;
+					for (size_t j = zoom_l; j <= zoom_r; j++) {
+						if (extra == 0)
+							break;
 
-			for (auto &estimator: still_estimators) {
-				threads.push_back(std::thread(
-					std::bind(&Estimator::concurrent_preestimate, this,
-						length, zoom, zoom_range, zoom_rate,
-						std::ref(*estimator), std::cref(callback),
-						std::ref(queue),
-						std::ref(mutex), std::ref(cv))));
+						if (needs_zoom(zoom, j, zoom_rate)) {
+							if (unzoomed_still_poses.find(j) == unzoomed_still_poses.end() &&
+									unzoomed_used.find(j) == unzoomed_used.end()) {
+								unzoomed_used.insert(j);
+								queue.push_back({ j, false });
+								extra--;
+							}
+						} else {
+							if (still_poses.find(j) == still_poses.end() &&
+									unzoomed_used.find(j) == unzoomed_used.end()) {
+								unzoomed_used.insert(j);
+								queue.push_back({ j, false });
+								extra--;
+							}
+						}
+					}
+
+					if (extra == 0)
+						break;
+
+					zoomed_used.insert(i);
+					queue.push_back({ i, true });
+					extra--;
+				} else if (!needs_zoom(zoom, i, zoom_rate) &&
+						still_poses.find(i) == still_poses.end() &&
+						unzoomed_used.find(i) == unzoomed_used.end()) {
+					unzoomed_used.insert(i);
+					queue.push_back({ i, false });
+					extra--;
+				}
+
+				// increment
+				if (i > fuzz_r) {
+					i++;
+					if (i >= length) {
+						if (fuzz_l == 0)
+							break;
+						else
+							i = fuzz_l - 1;
+					}
+				} else {
+					if (i == 0)
+						break;
+					i--;
+				}
 			}
 
-			for (auto &thread: threads)
-				thread.join();
+			if (!queue.empty()) {
+				std::mutex mutex;
+				std::condition_variable cv;
+				std::vector<std::thread> threads;
+
+				for (auto &estimator: still_estimators) {
+					threads.push_back(std::thread(
+						std::bind(&Estimator::concurrent_preestimate, this,
+							length, zoom, zoom_range, zoom_rate,
+							std::ref(*estimator), std::cref(callback),
+							std::ref(queue),
+							std::ref(mutex), std::ref(cv))));
+				}
+
+				for (auto &thread: threads)
+					thread.join();
+			}
 		}
 
 		std::function<std::pair<bool, const libaction::Human *>(size_t, bool)> fuzz_cb
@@ -202,7 +268,7 @@ private:
 		return zoom && (zoom_rate != 0) && (pos % zoom_rate == 0);
 	}
 
-	inline bool is_zoomed_estimation_possible(
+	inline bool zoom_estimation_possible(
 		size_t pos, size_t length, size_t zoom_range, size_t zoom_rate)
 	{
 		size_t l, r;
@@ -291,21 +357,43 @@ private:
 	{
 		std::unique_lock<std::mutex> lock(mutex);
 
-		bool found = false;
 		size_t pos = 0;
 		bool zoomed = false;
 
-		for (auto &elem: queue) {
-			size_t pos;
-			bool zoomed;
-			std::tie(pos, zoomed) = elem;
+		while (true) {
+			if (queue.empty())	// no more tasks
+				return false;
 
-			// TODO is zoom? is zoom possible? etc.
+			bool found = false;
+
+			for (auto it = queue.begin(); it != queue.end(); it++) {
+				if (it->second) {
+					if (zoom_estimation_possible(it->first, length, zoom_range, zoom_rate)) {
+						std::tie(pos, zoomed) = *it;
+						found = true;
+						queue.erase(it);
+						break;
+					}
+				} else {
+					std::tie(pos, zoomed) = *it;
+					found = true;
+					queue.erase(it);
+					break;
+				}
+			}
+
+			if (found)
+				break;
+
+			cv.wait(lock);
 		}
 
+		// TODO: Estimate. If zoomed, get the hints (make those into a separate function) first.
+		//       REMEMBER to unlock when estimating (everywhere).
 
 
-		// TODO: remove these
+
+		// TODO: remove these:
 
 		if (!frames_zoomed.empty()) {
 			pos = *frames_zoomed.begin();
@@ -403,9 +491,15 @@ private:
 		std::condition_variable &cv)
 	{
 		while (true) {
-			// TODO: do stuff
-
+			bool res = concurrent_preestimate_one(
+				length, zoom, zoom_range, zoom_rate,
+				still_estimator, callback,
+				queue, mutex, cv
+			);
 			cv.notify_all();
+
+			if (!res)
+				break;
 		}
 	}
 
