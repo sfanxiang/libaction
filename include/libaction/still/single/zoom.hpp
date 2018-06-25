@@ -15,6 +15,7 @@
 #include <boost/multi_array.hpp>
 #include <algorithm>
 #include <memory>
+#include <tuple>
 #include <utility>
 
 namespace libaction

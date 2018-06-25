@@ -15,11 +15,14 @@
 
 #include <boost/multi_array.hpp>
 #include <algorithm>
+#include <condition_variable>
 #include <cstdint>
 #include <functional>
+#include <list>
 #include <memory>
 #include <mutex>
 #include <thread>
+#include <tuple>
 #include <type_traits>
 #include <unordered_map>
 #include <unordered_set>
@@ -34,6 +37,9 @@ namespace single
 {
 
 /// Single-person motion estimator.
+
+/// @warning This class is not thread safe, although it contains multithread
+///          features.
 class Estimator
 {
 public:
@@ -58,13 +64,17 @@ public:
 	/// @param[in]  zoom_rate   The stride used for zoom reestimation. Must be
 	///                         greater than 0.
 	/// @param[in]  still_estimators A vector of one or more initialized human
-	///                              pose estimators, whose `estimate()` method
+	///                              pose estimators, whose `estimate` method
 	///                              must accept any image conforming to the
 	///                              Boost.MultiArray concept.
 	/// @param[in]  callback    A callback function allowing random access to
 	///                         the image frame at `pos`. The callback should
 	///                         return a valid pointer to the image, which must
 	///                         conform to the Boost.MultiArray concept.
+	/// @warning                `callback` may be called concurrently from
+	///                         different threads, sometimes with the same
+	///                         argument, if `still_estimators` has more than
+	///                         one element.
 	/// @return                 A map of humans from their index numbers.
 	/// @exception              std::runtime_error
 	/// @sa                     still::single::Estimator and
@@ -90,37 +100,71 @@ public:
 		if (still_estimators.size() > 1) {
 			// multi-thread support (preprocessing)
 
-			// prioriry order:
-			std::unordered_set<size_t>
-				frames_unzoomed_1, frames_zoomed, frames_unzoomed_2;
+			// a task is removed from the queue only if it is certain to finish
+			// without dependending on any unfinished task
+
+			std::unordered_set<size_t> unzoomed_used, zoomed_used;	// pos
+			std::list<std::pair<size_t, bool>> queue;	// pos, zoom
 
 			size_t fuzz_l, fuzz_r;
 			std::tie(fuzz_l, fuzz_r) =
 				detail::fuzz::get_fuzz_lr(pos, length, fuzz_range);
 
 			for (size_t i = fuzz_l; i <= fuzz_r; i++) {
-				frames_unzoomed_2.insert(i);
-			}
+				if (needs_zoom(zoom, i, zoom_rate) &&
+						still_poses.find(i) == still_poses.end() &&
+						zoomed_used.find(i) == zoomed_used.end()) {
+					size_t zoom_l, zoom_r;
+					std::tie(zoom_l, zoom_r) = libaction::still::single
+						::zoom::get_zoom_lr(i, length, zoom_range);
 
-			if (zoom) {
-				for (size_t i = fuzz_l; i <= fuzz_r; i++) {
-					if (needs_zoom(zoom, i, zoom_rate)) {
-						size_t zoom_l, zoom_r;
-						std::tie(zoom_l, zoom_r) = libaction::still::single
-							::zoom::get_zoom_lr(pos, length, zoom_range);
-
-						for (size_t j = zoom_l; j <= zoom_r; j++) {
-							frames_unzoomed_2.erase(j);
-							frames_unzoomed_1.insert(j);
+					for (size_t j = zoom_l; j <= zoom_r; j++) {
+						if (needs_zoom(zoom, j, zoom_rate)) {
+							if (unzoomed_still_poses.find(j) == unzoomed_still_poses.end() &&
+									unzoomed_used.find(j) == unzoomed_used.end())
+								unzoomed_used.insert(j);
+								queue.push_back({ j, false });
+						} else {
+							if (still_poses.find(j) == still_poses.end() &&
+									unzoomed_used.find(j) == unzoomed_used.end())
+								unzoomed_used.insert({ j, false });
+								queue.push_back({ j, false });
 						}
-
-						frames_zoomed.insert(i);
 					}
+
+					zoomed_used.insert(i);
+					queue.push_back({ i, true });
+				} else if (!needs_zoom(zoom, i, zoom_rate) &&
+						still_poses.find(i) == still_poses.end() &&
+						unzoomed_used.find(i) == unzoomed_used.end()) {
+					queue.push_back({ i, false });
 				}
 			}
 
+			size_t extra =
+				still_estimators.size() - (queue.size() % still_estimators.size());
+			if (extra == still_estimators.size())
+				extra = 0;
+
+			// TODO: fill in the queue with extra, remember to look at used
+
+			// TODO: if queue is empty, do nothing here!
+
 			std::mutex mutex;
-			// TODO
+			std::condition_variable cv;
+			std::vector<std::thread> threads;
+
+			for (auto &estimator: still_estimators) {
+				threads.push_back(std::thread(
+					std::bind(&Estimator::concurrent_preestimate, this,
+						length, zoom, zoom_range, zoom_rate,
+						std::ref(*estimator), std::cref(callback),
+						std::ref(queue),
+						std::ref(mutex), std::ref(cv))));
+			}
+
+			for (auto &thread: threads)
+				thread.join();
 		}
 
 		std::function<std::pair<bool, const libaction::Human *>(size_t, bool)> fuzz_cb
@@ -153,9 +197,28 @@ private:
 	// otherwise poses estimated on their unzoomed image
 	std::unordered_map<size_t, std::unique_ptr<libaction::Human>> still_poses{};
 
-	static constexpr inline bool needs_zoom(bool zoom, size_t pos, size_t zoom_rate)
+	static inline constexpr bool needs_zoom(bool zoom, size_t pos, size_t zoom_rate)
 	{
 		return zoom && (zoom_rate != 0) && (pos % zoom_rate == 0);
+	}
+
+	inline bool is_zoomed_estimation_possible(
+		size_t pos, size_t length, size_t zoom_range, size_t zoom_rate)
+	{
+		size_t l, r;
+		std::tie(l, r) = libaction::still::single::zoom::get_zoom_lr(
+			pos, length, zoom_range);
+
+		for (size_t i = l; i <= r; i++) {
+			if (needs_zoom(true, i, zoom_rate) &&
+					unzoomed_still_poses.find(i) == unzoomed_still_poses.end())
+				return false;
+			if (!needs_zoom(true, i, zoom_rate) &&
+					still_poses.find(i) == still_poses.end())
+				return false;
+		}
+
+		return true;
 	}
 
 	template<typename ImagePtr>
@@ -217,16 +280,133 @@ private:
 	}
 
 	template<typename StillEstimator, typename ImagePtr>
-	void concurrent_preestimate(
-		size_t zoom_range,
-		const std::vector<StillEstimator*> &still_estimators,
+	bool concurrent_preestimate_one(
+		size_t length,
+		bool zoom, size_t zoom_range, size_t zoom_rate,
+		StillEstimator &still_estimator,
 		const std::function<ImagePtr(size_t pos)> &callback,
-		std::unordered_set<size_t> frames_unzoomed_1,
-		std::unordered_set<size_t> frames_zoomed,
-		std::unordered_set<size_t> frames_unzoomed_2,
-		std::mutex mutex)
+		std::list<std::pair<size_t, bool>> &queue,
+		std::mutex &mutex,
+		std::condition_variable &cv)
 	{
+		std::unique_lock<std::mutex> lock(mutex);
 
+		bool found = false;
+		size_t pos = 0;
+		bool zoomed = false;
+
+		for (auto &elem: queue) {
+			size_t pos;
+			bool zoomed;
+			std::tie(pos, zoomed) = elem;
+
+			// TODO is zoom? is zoom possible? etc.
+		}
+
+
+
+		// TODO: remove these
+
+		if (!frames_zoomed.empty()) {
+			pos = *frames_zoomed.begin();
+			frames_zoomed.erase(frames_zoomed.begin());
+
+			zoomed = true;
+		} else if (!frames_unzoomed_2.empty()) {
+			pos = *frames_unzoomed_2.begin();
+			frames_unzoomed_2.erase(frames_unzoomed_2.begin());
+		} else {
+			return false;
+		}
+
+		if (zoomed) {
+			auto unzoomed_it = unzoomed_still_poses.find(pos);
+			if (unzoomed_it == unzoomed_still_poses.end())
+				throw std::runtime_error("cannot find frame in unzoomed_still_poses");
+
+			if (unzoomed_it->second) {
+				// human found in the unzoomed image
+
+				// now prepare the hints for a zoomed estimation
+
+				size_t l, r;
+				std::tie(l, r) = libaction::still::single::zoom::get_zoom_lr(
+					pos, length, zoom_range);
+
+				std::vector<const libaction::Human *> hints;
+
+				for (size_t i = l; i <= r; i++) {
+					if (i == pos)
+						continue;
+
+					decltype(still_poses)::iterator it;
+					if (needs_zoom(zoom, i, zoom_rate)) {
+						// unzoomed estimations for images which should be
+						// zoomed go to unzoomed_still_poses
+
+						it = unzoomed_still_poses.find(i);
+						if (it == unzoomed_still_poses.end())
+							throw std::runtime_error("cannot find frame in unzoomed_still_poses");
+					} else {
+						// estimations for images which should not be zoomed
+						// go to still_poses
+
+						it = still_poses.find(i);
+						if (it == still_poses.end())
+							throw std::runtime_error("cannot find frame in still_poses");
+					}
+
+					if (it->second)	// a useful hint
+						hints.push_back(it->second.get());
+				}
+
+				auto image = get_image_from_callback(pos, callback);
+
+				// zoom estimate
+				using zoom_cb_arg = boost::multi_array<typename
+					std::remove_reference<decltype(*image)>::type::element,
+					3
+				>;
+				std::function<std::unique_ptr<libaction::Human>
+					(const zoom_cb_arg&)> zoom_cb =
+				[&still_estimator] (const zoom_cb_arg &image_to_estimate) {
+					return estimate_still_pose_from_image(image_to_estimate,
+						still_estimator);
+				};
+				auto human = libaction::still::single::zoom::zoom_estimate(
+					*image, *unzoomed_it->second, hints, zoom_cb);
+
+				// zoomed estimations for images which should be zoomed go
+				// to still_poses
+				still_poses.insert(std::make_pair(pos, std::move(human)));
+			} else {
+				// no human found in unzoomed image
+				// impossible to do zoomed estimation
+				still_poses.insert(std::make_pair(pos, std::unique_ptr<libaction::Human>()));
+			}
+		} else {
+			estimate_still_pose_from_callback_on(
+				pos, callback, still_estimator, still_poses);
+		}
+
+		return true;
+	}
+
+	template<typename StillEstimator, typename ImagePtr>
+	void concurrent_preestimate(
+		size_t length,
+		bool zoom, size_t zoom_range, size_t zoom_rate,
+		StillEstimator &still_estimator,
+		const std::function<ImagePtr(size_t pos)> &callback,
+		std::list<std::pair<size_t, bool>> &queue,
+		std::mutex &mutex,
+		std::condition_variable &cv)
+	{
+		while (true) {
+			// TODO: do stuff
+
+			cv.notify_all();
+		}
 	}
 
 	template<typename StillEstimator, typename ImagePtr>
