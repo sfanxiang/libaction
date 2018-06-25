@@ -20,7 +20,7 @@
 
 /// @example action_motion.cpp
 
-static std::unique_ptr<boost::multi_array<uint8_t, 3>> read_image(
+static std::unique_ptr<const boost::multi_array<uint8_t, 3>> read_image(
 	const std::string &file, size_t height, size_t width, size_t channels)
 {
 	std::ifstream f(file, f.binary);
@@ -38,7 +38,7 @@ static std::unique_ptr<boost::multi_array<uint8_t, 3>> read_image(
 	return image;
 }
 
-static std::unique_ptr<boost::multi_array<uint8_t, 3>> motion_callback(
+static std::unique_ptr<const boost::multi_array<uint8_t, 3>> motion_callback(
 	const std::string &image_file_prefix,
 	const std::string &image_file_suffix,
 	size_t image_height, size_t image_width, size_t channels, size_t pos

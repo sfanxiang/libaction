@@ -107,6 +107,7 @@ public:
 			// without dependending on any unfinished task. If a task is in the
 			// queue, then it has not been claimed yet.
 
+			// populate the queue
 			size_t fuzz_l, fuzz_r;
 			std::tie(fuzz_l, fuzz_r) =
 				detail::fuzz::get_fuzz_lr(pos, length, fuzz_range);
@@ -146,7 +147,6 @@ public:
 			}
 
 			// add extra tasks to make multithread truly effective
-
 			size_t extra =
 				still_estimators.size() - (queue.size() % still_estimators.size());
 			if (extra == still_estimators.size())
@@ -215,6 +215,8 @@ public:
 			}
 
 			if (!queue.empty()) {
+				// start the threads
+
 				std::mutex mutex;
 				std::condition_variable cv;
 				std::vector<std::thread> threads;
@@ -366,6 +368,7 @@ private:
 
 			bool found = false;
 
+			// try to find the first possible task
 			for (auto it = queue.begin(); it != queue.end(); it++) {
 				if (it->second) {
 					if (zoom_estimation_possible(it->first, length, zoom_range, zoom_rate)) {
@@ -386,25 +389,6 @@ private:
 				break;
 
 			cv.wait(lock);
-		}
-
-		// TODO: Estimate. If zoomed, get the hints (make those into a separate function) first.
-		//       REMEMBER to unlock when estimating (everywhere).
-
-
-
-		// TODO: remove these:
-
-		if (!frames_zoomed.empty()) {
-			pos = *frames_zoomed.begin();
-			frames_zoomed.erase(frames_zoomed.begin());
-
-			zoomed = true;
-		} else if (!frames_unzoomed_2.empty()) {
-			pos = *frames_unzoomed_2.begin();
-			frames_unzoomed_2.erase(frames_unzoomed_2.begin());
-		} else {
-			return false;
 		}
 
 		if (zoomed) {
@@ -457,9 +441,19 @@ private:
 				>;
 				std::function<std::unique_ptr<libaction::Human>
 					(const zoom_cb_arg&)> zoom_cb =
-				[&still_estimator] (const zoom_cb_arg &image_to_estimate) {
-					return estimate_still_pose_from_image(image_to_estimate,
-						still_estimator);
+				[&still_estimator, &lock] (const zoom_cb_arg &image_to_estimate)
+				{
+					// unlock and estimate
+					lock.unlock();
+					try {
+						auto result = estimate_still_pose_from_image(
+							image_to_estimate, still_estimator);
+						lock.lock();
+						return result;
+					} catch (const std::runtime_error &) {
+						lock.lock();
+						throw;
+					}
 				};
 				auto human = libaction::still::single::zoom::zoom_estimate(
 					*image, *unzoomed_it->second, hints, zoom_cb);
@@ -473,8 +467,16 @@ private:
 				still_poses.insert(std::make_pair(pos, std::unique_ptr<libaction::Human>()));
 			}
 		} else {
-			estimate_still_pose_from_callback_on(
-				pos, callback, still_estimator, still_poses);
+			// unlock and estimate
+			lock.unlock();
+			try {
+				estimate_still_pose_from_callback_on(
+					pos, callback, still_estimator, still_poses);
+				lock.lock();
+			} catch (const std::runtime_error &) {
+				lock.lock();
+				throw;
+			}
 		}
 
 		return true;
