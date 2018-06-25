@@ -52,15 +52,19 @@ static std::unique_ptr<const boost::multi_array<uint8_t, 3>> motion_callback(
 
 int main(int argc, char *argv[])
 {
-	if (argc != 10) {
+	if (argc != 11) {
 		std::cerr << "Usage: <raw image files prefix> <raw image files suffix> "
 			"<number of images> <image height> <image width> "
-			"<graph file> <graph height> <graph width> <threads>"
+			"<graph file> <graph height> <graph width> "
+			"<concurrent estimations> <threads per estimation>"
 			<< std::endl << std::endl
 			<< "For example, if <raw image files prefix> is \"image\", "
 			"<raw image files suffix> is \".raw\" and <number of images> is 3, "
 			"then the image sequence is image0.raw, image1.raw, and "
-			"image2.raw." << std::endl;
+			"image2.raw." << std::endl << std::endl
+			<< "If <threads per estimation> is 0, the number of threads per "
+			"estimation will be automatically decided."
+			<< std::endl << std::endl;
 		return EXIT_FAILURE;
 	}
 
@@ -78,12 +82,13 @@ int main(int argc, char *argv[])
 		const std::string graph_file = argv[6];
 		const size_t graph_height = std::stoul(argv[7]);
 		const size_t graph_width = std::stoul(argv[8]);
-		const size_t threads = std::stoul(argv[9]);
+		const size_t concurrent_estimations = std::stoul(argv[9]);
+		const size_t threads_per_estimation = std::stoul(argv[10]);
 
 		if (num_images == 0)
 			throw std::runtime_error("<number of images> is 0");
-		if (threads == 0)
-			throw std::runtime_error("<threads> is 0");
+		if (concurrent_estimations == 0)
+			throw std::runtime_error("<concurrent estimations> is 0");
 
 		std::vector<libaction::still::single::Estimator<float>>
 			still_estimators;
@@ -91,9 +96,10 @@ int main(int argc, char *argv[])
 			still_estimator_ptrs;
 
 		// initialize the single pose estimators
-		for (size_t i = 0; i < threads; i++) {
+		for (size_t i = 0; i < concurrent_estimations; i++) {
 			still_estimators.emplace_back(
-				graph_file, 0, graph_height, graph_width, channels);
+				graph_file, threads_per_estimation,
+				graph_height, graph_width, channels);
 			still_estimator_ptrs.push_back(&still_estimators.back());
 		}
 

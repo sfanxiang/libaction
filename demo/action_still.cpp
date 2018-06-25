@@ -38,9 +38,12 @@ static std::unique_ptr<const boost::multi_array<uint8_t, 3>> read_image(
 
 int main(int argc, char *argv[])
 {
-	if (argc != 7) {
+	if (argc != 8) {
 		std::cerr << "Usage: <raw image file> <image height> <image width> "
-			"<graph file> <graph height> <graph width>" << std::endl;
+			"<graph file> <graph height> <graph width> <threads>"
+			<< std::endl << std::endl
+			<< "If <threads> is 0, the number of threads for the estimation "
+			"will be automatically decided." << std::endl << std::endl;
 		return EXIT_FAILURE;
 	}
 
@@ -53,10 +56,11 @@ int main(int argc, char *argv[])
 		const std::string graph_file = argv[4];
 		const size_t graph_height = std::stoul(argv[5]);
 		const size_t graph_width = std::stoul(argv[6]);
+		const size_t threads = std::stoul(argv[7]);
 
 		// initialize the single pose estimator
 		libaction::still::single::Estimator<float> estimator(
-			graph_file, 0, graph_height, graph_width, channels);
+			graph_file, threads, graph_height, graph_width, channels);
 
 		// read the image
 		auto image = read_image(image_file, image_height, image_width,
