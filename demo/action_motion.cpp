@@ -52,10 +52,10 @@ static std::unique_ptr<const boost::multi_array<uint8_t, 3>> motion_callback(
 
 int main(int argc, char *argv[])
 {
-	if (argc != 9) {
+	if (argc != 10) {
 		std::cerr << "Usage: <raw image files prefix> <raw image files suffix> "
 			"<number of images> <image height> <image width> "
-			"<graph file> <graph height> <graph width>"
+			"<graph file> <graph height> <graph width> <threads>"
 			<< std::endl << std::endl
 			<< "For example, if <raw image files prefix> is \"image\", "
 			"<raw image files suffix> is \".raw\" and <number of images> is 3, "
@@ -78,21 +78,31 @@ int main(int argc, char *argv[])
 		const std::string graph_file = argv[6];
 		const size_t graph_height = std::stoul(argv[7]);
 		const size_t graph_width = std::stoul(argv[8]);
+		const size_t threads = std::stoul(argv[9]);
 
-		if (num_images == 0) {
+		if (num_images == 0)
 			throw std::runtime_error("<number of images> is 0");
-		}
+		if (threads == 0)
+			throw std::runtime_error("<threads> is 0");
 
-		// initialize the single pose estimator
-		libaction::still::single::Estimator<float> still_estimator(
-			graph_file, 0, graph_height, graph_width, channels);
+		std::vector<libaction::still::single::Estimator<float>>
+			still_estimators;
+		std::vector<libaction::still::single::Estimator<float>*>
+			still_estimator_ptrs;
+
+		// initialize the single pose estimators
+		for (size_t i = 0; i < threads; i++) {
+			still_estimators.emplace_back(
+				graph_file, 0, graph_height, graph_width, channels);
+			still_estimator_ptrs.push_back(&still_estimators.back());
+		}
 
 		// initialize the single motion estimator
 		libaction::motion::single::Estimator motion_estimator;
 
 		// initialize the callback
 		using callback_type = std::function<
-			std::unique_ptr<boost::multi_array<uint8_t, 3>>(size_t pos)>;
+			std::unique_ptr<const boost::multi_array<uint8_t, 3>>(size_t pos)>;
 		callback_type callback(std::bind(
 			&motion_callback,
 			image_file_prefix, image_file_suffix,
@@ -106,8 +116,7 @@ int main(int argc, char *argv[])
 			auto humans = motion_estimator.estimate(i, num_images,
 				fuzz_range,
 				true, zoom_range, zoom_rate,
-				std::vector<decltype(still_estimator)*>{ &still_estimator },
-				callback);
+				still_estimator_ptrs, callback);
 
 			// show results
 			std::cout << "======== Image #" << i << " ========" << std::endl;

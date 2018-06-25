@@ -223,7 +223,9 @@ public:
 
 				for (auto &estimator: still_estimators) {
 					threads.push_back(std::thread(
-						std::bind(&Estimator::concurrent_preestimate, this,
+						std::bind(
+							&Estimator::concurrent_preestimate<
+								StillEstimator, ImagePtr>, this,
 							length, zoom, zoom_range, zoom_rate,
 							std::ref(*estimator), std::cref(callback),
 							std::ref(queue),
@@ -349,8 +351,7 @@ private:
 
 	template<typename StillEstimator, typename ImagePtr>
 	bool concurrent_preestimate_one(
-		size_t length,
-		bool zoom, size_t zoom_range, size_t zoom_rate,
+		size_t length, bool zoom, size_t zoom_range, size_t zoom_rate,
 		StillEstimator &still_estimator,
 		const std::function<ImagePtr(size_t pos)> &callback,
 		std::list<std::pair<size_t, bool>> &queue,
@@ -484,8 +485,7 @@ private:
 
 	template<typename StillEstimator, typename ImagePtr>
 	void concurrent_preestimate(
-		size_t length,
-		bool zoom, size_t zoom_range, size_t zoom_rate,
+		size_t length, bool zoom, size_t zoom_range, size_t zoom_rate,
 		StillEstimator &still_estimator,
 		const std::function<ImagePtr(size_t pos)> &callback,
 		std::list<std::pair<size_t, bool>> &queue,
