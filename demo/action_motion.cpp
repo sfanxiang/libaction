@@ -90,17 +90,19 @@ int main(int argc, char *argv[])
 		if (concurrent_estimations == 0)
 			throw std::runtime_error("<concurrent estimations> is 0");
 
-		std::vector<libaction::still::single::Estimator<float>>
+		std::vector<std::unique_ptr<libaction::still::single::Estimator<float>>>
 			still_estimators;
 		std::vector<libaction::still::single::Estimator<float>*>
 			still_estimator_ptrs;
 
 		// initialize the single pose estimators
 		for (size_t i = 0; i < concurrent_estimations; i++) {
-			still_estimators.emplace_back(
-				graph_file, threads_per_estimation,
-				graph_height, graph_width, channels);
-			still_estimator_ptrs.push_back(&still_estimators.back());
+			still_estimators.push_back(
+				std::unique_ptr<libaction::still::single::Estimator<float>>(
+					new libaction::still::single::Estimator<float>(
+						graph_file, threads_per_estimation,
+						graph_height, graph_width, channels)));
+			still_estimator_ptrs.push_back(still_estimators.back().get());
 		}
 
 		// initialize the single motion estimator
