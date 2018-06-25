@@ -153,6 +153,13 @@ public:
 				extra = 0;
 
 			for (size_t i = fuzz_r + 1; ; ) {
+				if (i >= length) {
+					if (fuzz_l == 0)
+						break;
+					else
+						i = fuzz_l - 1;
+				}
+
 				if (extra == 0)
 					break;
 
@@ -275,6 +282,9 @@ private:
 	inline bool zoom_estimation_possible(
 		size_t pos, size_t length, size_t zoom_range, size_t zoom_rate)
 	{
+		if (pos >= length)
+			return false;
+
 		size_t l, r;
 		std::tie(l, r) = libaction::still::single::zoom::get_zoom_lr(
 			pos, length, zoom_range);
@@ -468,16 +478,22 @@ private:
 				still_poses.insert(std::make_pair(pos, std::unique_ptr<libaction::Human>()));
 			}
 		} else {
+			auto image = get_image_from_callback(pos, callback);
+			std::unique_ptr<libaction::Human> human;
+
 			// unlock and estimate
 			lock.unlock();
 			try {
-				estimate_still_pose_from_callback_on(
-					pos, callback, still_estimator, still_poses);
+				human = estimate_still_pose_from_image(*image, still_estimator);
 				lock.lock();
 			} catch (const std::runtime_error &) {
 				lock.lock();
 				throw;
 			}
+
+			(needs_zoom(zoom, pos, zoom_rate) ?
+				unzoomed_still_poses : still_poses)
+			.insert(std::make_pair(pos, std::move(human)));
 		}
 
 		return true;
