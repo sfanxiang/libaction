@@ -100,12 +100,14 @@ public:
 		if (still_estimators.size() > 1) {
 			// multi-thread support (preprocessing)
 
+			// zoomed_used only tracks zoomed tasks of frames which should be
+			// zoomed. unzoomed_used tracks unzoomed tasks of all frames.
 			std::unordered_set<size_t> unzoomed_used, zoomed_used;	// pos
-			std::list<std::pair<size_t, bool>> queue;	// pos, zoomed
 
 			// A task is removed from the queue only if it is certain to finish
 			// without dependending on any unfinished task. If a task is in the
 			// queue, then it has not been claimed yet.
+			std::list<std::pair<size_t, bool>> queue;	// pos, zoomed
 
 			// populate the queue
 			size_t fuzz_l, fuzz_r;
