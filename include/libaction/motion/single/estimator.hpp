@@ -216,10 +216,15 @@ public:
 
 				std::mutex mutex;
 				std::condition_variable cv;
+				std::vector<std::unique_ptr<bool>> statuses;
+				bool end = false;
+
 				std::vector<std::thread> threads;
-				size_t unfinished_tasks = queue.size();
 
 				for (auto &estimator: still_estimators) {
+					statuses.push_back(std::unique_ptr<bool>(
+						new bool(false)));
+
 					threads.push_back(std::thread(
 						std::bind(
 							&Estimator::concurrent_preestimate<
@@ -227,9 +232,41 @@ public:
 							length, zoom, zoom_range, zoom_rate,
 							std::ref(*estimator), std::cref(callback),
 							std::ref(queue), std::ref(extra_queue),
-							std::ref(unfinished_tasks),
-							std::ref(mutex), std::ref(cv))));
+							std::ref(mutex), std::ref(cv),
+							std::ref(*statuses.back()), std::ref(end))));
 				}
+
+				std::unique_lock<std::mutex> lock(mutex);
+
+				while (true) {
+					// statuses are all false
+
+					for (size_t i = 0; i < threads.size(); i++) {
+						bool &status = *statuses[i];
+						cv.wait(lock, [&status] { return status; });
+					}
+
+					// statuses are all true
+
+					if (queue.empty())
+						end = true;
+
+					for (size_t i = 0; i < threads.size(); i++) {
+						bool &status = *statuses[i];
+						status = false;
+					}
+
+					// statuses are all false
+
+					lock.unlock();
+					cv.notify_all();
+					lock.lock();
+
+					if (end)
+						break;
+				}
+
+				lock.unlock();
 
 				for (auto &thread: threads)
 					thread.join();
@@ -351,74 +388,55 @@ private:
 		return std::make_pair(std::move(image), it);
 	}
 
+	/// Estimate one for concurrent(multithread) estimation.
 	template<typename StillEstimator, typename ImagePtr>
-	bool concurrent_preestimate_one(
+	void concurrent_preestimate_one(
 		size_t length, bool zoom, size_t zoom_range, size_t zoom_rate,
 		StillEstimator &still_estimator,
 		const std::function<ImagePtr(size_t pos)> &callback,
 		std::list<std::pair<size_t, bool>> &queue,
 		std::list<std::pair<size_t, bool>> &extra_queue,
-		size_t &unfinished_tasks,
-		std::mutex &mutex,
-		std::condition_variable &cv)
+		std::unique_lock<std::mutex> &lock)
 	{
-		std::unique_lock<std::mutex> lock(mutex);
-
 		size_t pos = 0;
 		bool zoomed = false;
-		bool extra = false;
 
-		while (true) {
-			if (queue.empty() && extra_queue.empty())	// no more tasks to do
-				return false;
-			if (unfinished_tasks == 0)	// no need to continue
-				return false;
-
-			bool found = false;
-
-			// try to find the first possible task
-			for (auto it = queue.begin(); it != queue.end(); it++) {
-				if (it->second) {
-					if (zoom_estimation_possible(it->first, length, zoom_range, zoom_rate)) {
-						std::tie(pos, zoomed) = *it;
-						found = true;
-						queue.erase(it);
-						break;
-					}
-				} else {
+		// try to find the first possible task
+		bool found = false;
+		for (auto it = queue.begin(); it != queue.end(); it++) {
+			if (it->second) {
+				if (zoom_estimation_possible(it->first, length, zoom_range, zoom_rate)) {
 					std::tie(pos, zoomed) = *it;
 					found = true;
 					queue.erase(it);
 					break;
 				}
-			}
-
-			if (found)
+			} else {
+				std::tie(pos, zoomed) = *it;
+				found = true;
+				queue.erase(it);
 				break;
-
+			}
+		}
+		if (!found) {
 			for (auto it = extra_queue.begin(); it != extra_queue.end(); it++) {
 				if (it->second) {
 					if (zoom_estimation_possible(it->first, length, zoom_range, zoom_rate)) {
 						std::tie(pos, zoomed) = *it;
-						extra = true;
 						found = true;
 						extra_queue.erase(it);
 						break;
 					}
 				} else {
 					std::tie(pos, zoomed) = *it;
-					extra = true;
 					found = true;
 					extra_queue.erase(it);
 					break;
 				}
 			}
-
-			if (found)
-				break;
-
-			cv.wait(lock);
 		}
+		if (!found)
+			return;
 
 		if (zoomed) {
 			auto unzoomed_it = unzoomed_still_poses.find(pos);
@@ -513,10 +531,6 @@ private:
 				unzoomed_still_poses : still_poses)
 			.insert(std::make_pair(pos, std::move(human)));
 		}
-
-		if (unfinished_tasks > 0 && !extra)
-			unfinished_tasks--;
-		return true;
 	}
 
 	template<typename StillEstimator, typename ImagePtr>
@@ -526,21 +540,38 @@ private:
 		const std::function<ImagePtr(size_t pos)> &callback,
 		std::list<std::pair<size_t, bool>> &queue,
 		std::list<std::pair<size_t, bool>> &extra_queue,
-		size_t &unfinished_tasks,
 		std::mutex &mutex,
-		std::condition_variable &cv)
+		std::condition_variable &cv,
+		bool &status, bool &end)
 	{
 		while (true) {
-			bool res = concurrent_preestimate_one(
-				length, zoom, zoom_range, zoom_rate,
-				still_estimator, callback,
-				queue, extra_queue, unfinished_tasks,
-				mutex, cv
-			);
+			// status is false
+
+			{
+				std::unique_lock<std::mutex> lock(mutex);
+
+				concurrent_preestimate_one(
+					length, zoom, zoom_range, zoom_rate,
+					still_estimator, callback,
+					queue, extra_queue, lock
+				);
+
+				status = true;
+			}
+
+			// status is true
+
 			cv.notify_all();
 
-			if (!res)
-				break;
+			{
+				std::unique_lock<std::mutex> lock(mutex);
+
+				cv.wait(lock, [&status] { return !status; });
+				if (end)
+					return;
+			}
+
+			// status is false
 		}
 	}
 
