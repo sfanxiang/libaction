@@ -148,22 +148,20 @@ public:
 				}
 			}
 
-			// add extra tasks to make multithread truly effective
-			size_t extra =
-				still_estimators.size() - (queue.size() % still_estimators.size());
-			if (extra == still_estimators.size())
-				extra = 0;
+			std::list<std::pair<size_t, bool>> extra_queue;	// pos, zoomed
 
+			// add extra tasks to make multithread truly effective
 			for (size_t i = fuzz_r + 1; ; ) {
+				// if the queue is empty, we don't need extra
+				if (queue.empty())
+					break;
+
 				if (i >= length) {
 					if (fuzz_l == 0)
 						break;
 					else
 						i = fuzz_l - 1;
 				}
-
-				if (extra == 0)
-					break;
 
 				if (needs_zoom(zoom, i, zoom_rate) &&
 						still_poses.find(i) == still_poses.end() &&
@@ -173,38 +171,28 @@ public:
 						::zoom::get_zoom_lr(i, length, zoom_range);
 
 					for (size_t j = zoom_l; j <= zoom_r; j++) {
-						if (extra == 0)
-							break;
-
 						if (needs_zoom(zoom, j, zoom_rate)) {
 							if (unzoomed_still_poses.find(j) == unzoomed_still_poses.end() &&
 									unzoomed_used.find(j) == unzoomed_used.end()) {
 								unzoomed_used.insert(j);
-								queue.push_back({ j, false });
-								extra--;
+								extra_queue.push_back({ j, false });
 							}
 						} else {
 							if (still_poses.find(j) == still_poses.end() &&
 									unzoomed_used.find(j) == unzoomed_used.end()) {
 								unzoomed_used.insert(j);
-								queue.push_back({ j, false });
-								extra--;
+								extra_queue.push_back({ j, false });
 							}
 						}
 					}
 
-					if (extra == 0)
-						break;
-
 					zoomed_used.insert(i);
-					queue.push_back({ i, true });
-					extra--;
+					extra_queue.push_back({ i, true });
 				} else if (!needs_zoom(zoom, i, zoom_rate) &&
 						still_poses.find(i) == still_poses.end() &&
 						unzoomed_used.find(i) == unzoomed_used.end()) {
 					unzoomed_used.insert(i);
-					queue.push_back({ i, false });
-					extra--;
+					extra_queue.push_back({ i, false });
 				}
 
 				// increment
@@ -229,6 +217,7 @@ public:
 				std::mutex mutex;
 				std::condition_variable cv;
 				std::vector<std::thread> threads;
+				size_t unfinished_tasks = queue.size();
 
 				for (auto &estimator: still_estimators) {
 					threads.push_back(std::thread(
@@ -237,7 +226,8 @@ public:
 								StillEstimator, ImagePtr>, this,
 							length, zoom, zoom_range, zoom_rate,
 							std::ref(*estimator), std::cref(callback),
-							std::ref(queue),
+							std::ref(queue), std::ref(extra_queue),
+							std::ref(unfinished_tasks),
 							std::ref(mutex), std::ref(cv))));
 				}
 
@@ -367,6 +357,8 @@ private:
 		StillEstimator &still_estimator,
 		const std::function<ImagePtr(size_t pos)> &callback,
 		std::list<std::pair<size_t, bool>> &queue,
+		std::list<std::pair<size_t, bool>> &extra_queue,
+		size_t &unfinished_tasks,
 		std::mutex &mutex,
 		std::condition_variable &cv)
 	{
@@ -374,9 +366,12 @@ private:
 
 		size_t pos = 0;
 		bool zoomed = false;
+		bool extra = false;
 
 		while (true) {
-			if (queue.empty())	// no more tasks
+			if (queue.empty() && extra_queue.empty())	// no more tasks to do
+				return false;
+			if (unfinished_tasks == 0)	// no need to continue
 				return false;
 
 			bool found = false;
@@ -394,6 +389,27 @@ private:
 					std::tie(pos, zoomed) = *it;
 					found = true;
 					queue.erase(it);
+					break;
+				}
+			}
+
+			if (found)
+				break;
+
+			for (auto it = extra_queue.begin(); it != extra_queue.end(); it++) {
+				if (it->second) {
+					if (zoom_estimation_possible(it->first, length, zoom_range, zoom_rate)) {
+						std::tie(pos, zoomed) = *it;
+						extra = true;
+						found = true;
+						extra_queue.erase(it);
+						break;
+					}
+				} else {
+					std::tie(pos, zoomed) = *it;
+					extra = true;
+					found = true;
+					extra_queue.erase(it);
 					break;
 				}
 			}
@@ -498,6 +514,8 @@ private:
 			.insert(std::make_pair(pos, std::move(human)));
 		}
 
+		if (unfinished_tasks > 0 && !extra)
+			unfinished_tasks--;
 		return true;
 	}
 
@@ -507,6 +525,8 @@ private:
 		StillEstimator &still_estimator,
 		const std::function<ImagePtr(size_t pos)> &callback,
 		std::list<std::pair<size_t, bool>> &queue,
+		std::list<std::pair<size_t, bool>> &extra_queue,
+		size_t &unfinished_tasks,
 		std::mutex &mutex,
 		std::condition_variable &cv)
 	{
@@ -514,7 +534,8 @@ private:
 			bool res = concurrent_preestimate_one(
 				length, zoom, zoom_range, zoom_rate,
 				still_estimator, callback,
-				queue, mutex, cv
+				queue, extra_queue, unfinished_tasks,
+				mutex, cv
 			);
 			cv.notify_all();
 
