@@ -431,6 +431,7 @@ get_fuzz_lr(size_t pos, size_t length, size_t fuzz_range)
 	return std::make_pair(l, r);
 }
 
+// TODO: make this public
 template<typename HumanPtr>
 inline std::unique_ptr<libaction::Human> fuzz(
 	size_t fuzz_range,
