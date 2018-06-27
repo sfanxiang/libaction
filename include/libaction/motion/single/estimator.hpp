@@ -12,6 +12,7 @@
 #include "../../human.hpp"
 #include "../../still/single/zoom.hpp"
 #include "../detail/fuzz.hpp"
+#include "anti_crossing.hpp"
 
 #include <boost/multi_array.hpp>
 #include <algorithm>
@@ -56,6 +57,7 @@ public:
 	///                         The distance between the right frame and the
 	///                         left frame is at most `fuzz_range`. To turn off
 	///                         fuzz estimation, set `fuzz_range` to 0.
+	/// @param[in]  anti_crossing Whether to enable anti crossing.
 	/// @param[in]  zoom        Whether zoom estimation should be enabled.
 	/// @param[in]  zoom_range  The range of images used for zoom reestimation.
 	///                         If `zoom_range` is 0, or no useful image is
@@ -82,14 +84,15 @@ public:
 	///                         one element.
 	/// @return                 A map of humans from their index numbers.
 	/// @exception              std::runtime_error
-	/// @sa                     still::single::Estimator and
+	/// @sa                     motion::single::anti_crossing::anti_crossing,
+	///                         still::single::Estimator and
 	///                         still::single::zoom::zoom_estimate
 	template<typename StillEstimator, typename ZoomStillEstimator,
 		typename ImagePtr>
 	inline std::unique_ptr<std::unordered_map<size_t, libaction::Human>>
 	estimate(
 		size_t pos, size_t length,
-		size_t fuzz_range,
+		size_t fuzz_range, bool anti_crossing,
 		bool zoom, size_t zoom_range, size_t zoom_rate,
 		const std::vector<StillEstimator*> &still_estimators,
 		const std::vector<ZoomStillEstimator*> &zoom_still_estimators,
@@ -120,11 +123,15 @@ public:
 			std::list<std::pair<size_t, bool>> queue;	// pos, zoomed
 
 			// populate the queue
-			size_t fuzz_l, fuzz_r;
-			std::tie(fuzz_l, fuzz_r) =
+			size_t range_l, range_r;
+			std::tie(range_l, range_r) =
 				detail::fuzz::get_fuzz_lr(pos, length, fuzz_range);
+			if (anti_crossing && range_l > 0)
+				range_l--;
+			if (anti_crossing && range_r < length - 1)
+				range_r++;
 
-			for (size_t i = fuzz_l; i <= fuzz_r; i++) {
+			for (size_t i = range_l; i <= range_r; i++) {
 				if (needs_zoom(zoom, i, zoom_rate) &&
 						still_poses.find(i) == still_poses.end() &&
 						zoomed_used.find(i) == zoomed_used.end()) {
@@ -161,16 +168,16 @@ public:
 			std::list<std::pair<size_t, bool>> extra_queue;	// pos, zoomed
 
 			// add extra tasks to make multithread truly effective
-			for (size_t i = fuzz_r + 1; ; ) {
+			for (size_t i = range_r + 1; ; ) {
 				// if the queue is empty, we don't need extra
 				if (queue.empty())
 					break;
 
 				if (i >= length) {
-					if (fuzz_l == 0)
+					if (range_l == 0)
 						break;
 					else
-						i = fuzz_l - 1;
+						i = range_l - 1;
 				}
 
 				if (needs_zoom(zoom, i, zoom_rate) &&
@@ -206,13 +213,13 @@ public:
 				}
 
 				// increment
-				if (i > fuzz_r) {
+				if (i > range_r) {
 					i++;
 					if (i >= length) {
-						if (fuzz_l == 0)
+						if (range_l == 0)
 							break;
 						else
-							i = fuzz_l - 1;
+							i = range_l - 1;
 					}
 				} else {
 					if (i == 0)
@@ -291,11 +298,11 @@ public:
 			}
 		}
 
-		std::function<std::pair<bool, const libaction::Human *>(size_t, bool)> fuzz_cb
-			= [pos, length, zoom, zoom_range, zoom_rate, &still_estimators, &zoom_still_estimators, &callback, this]
-				(size_t offset, bool left) -> std::pair<bool, const libaction::Human *>
+		std::function<std::pair<bool, std::unique_ptr<const libaction::Human>>(size_t, bool)> fuzz_cb
+			= [pos, length, anti_crossing, zoom, zoom_range, zoom_rate, &still_estimators, &zoom_still_estimators, &callback, this]
+				(size_t offset, bool left) -> std::pair<bool, std::unique_ptr<const libaction::Human>>
 		{
-			return fuzz_callback(pos, length, zoom, zoom_range, zoom_rate,
+			return fuzz_callback(pos, length, anti_crossing, zoom, zoom_range, zoom_rate,
 				**still_estimators.begin(), **zoom_still_estimators.begin(),
 				callback, offset, left);
 		};
@@ -600,7 +607,7 @@ private:
 
 	template<typename StillEstimator, typename ImagePtr>
 	std::pair<bool, const libaction::Human *>
-	fuzz_callback(size_t pos, size_t length,
+	fuzz_callback_before_anti_crossing(size_t pos, size_t length,
 		bool zoom, size_t zoom_range, size_t zoom_rate,
 		StillEstimator &still_estimator,
 		StillEstimator &zoom_still_estimator,
@@ -735,6 +742,82 @@ private:
 
 			return std::make_pair(true, it->second.get());
 		}
+	}
+
+	template<typename StillEstimator, typename ImagePtr>
+	std::pair<bool, std::unique_ptr<const libaction::Human>>
+	fuzz_callback(size_t pos, size_t length, bool anti_crossing,
+		bool zoom, size_t zoom_range, size_t zoom_rate,
+		StillEstimator &still_estimator,
+		StillEstimator &zoom_still_estimator,
+		const std::function<ImagePtr(size_t pos)> &callback,
+		size_t offset, bool left)
+	{
+		auto result = fuzz_callback_before_anti_crossing(pos, length,
+			zoom, zoom_range, zoom_rate,
+			still_estimator, zoom_still_estimator, callback,
+			offset, left);
+
+		if (anti_crossing && result.first && result.second) {
+			std::pair<bool, const libaction::Human *> left_human, right_human;
+			{
+				// left
+				size_t offset2 = offset;
+				bool left2 = left;
+				if (left2) {
+					offset2++;
+				} else {
+					if (offset2 > 0) {
+						offset2--;
+					} else {
+						offset2 = 1;
+						left2 = true;
+					}
+				}
+				left_human = fuzz_callback_before_anti_crossing(pos, length,
+					zoom, zoom_range, zoom_rate,
+					still_estimator, zoom_still_estimator, callback,
+					offset2, left2);
+			}
+			{
+				// right
+				size_t offset2 = offset;
+				bool left2 = left;
+				if (!left2) {
+					offset2++;
+				} else {
+					if (offset2 > 0) {
+						offset2--;
+					} else {
+						offset2 = 1;
+						left2 = false;
+					}
+				}
+				right_human = fuzz_callback_before_anti_crossing(pos, length,
+					zoom, zoom_range, zoom_rate,
+					still_estimator, zoom_still_estimator, callback,
+					offset2, left2);
+			}
+
+			if (!left_human.first)
+				left_human.second = nullptr;
+			if (!right_human.first)
+				right_human.second = nullptr;
+
+			auto anti_crossing_result = anti_crossing::anti_crossing(
+				*result.second, left_human.second, right_human.second);
+			return std::make_pair(true, std::move(anti_crossing_result));
+		}
+
+		std::unique_ptr<const libaction::Human> human_ptr;
+		if (result.first && result.second) {
+			human_ptr = std::unique_ptr<const libaction::Human>(
+				result.second,
+				[] (const libaction::Human *) {}
+			);
+		}
+
+		return std::make_pair(result.first, std::move(human_ptr));
 	}
 
 	/// Get the processed human pose to return to the user.
