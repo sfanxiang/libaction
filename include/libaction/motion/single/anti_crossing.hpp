@@ -39,6 +39,7 @@ inline T dist(T x1, T y1, T x2, T y2)
 }
 
 inline auto dist(const libaction::BodyPart &x, const libaction::BodyPart &y)
+	-> decltype(dist(x.x(), x.y(), y.x(), y.y()))
 {
 	return dist(x.x(), x.y(), y.x(), y.y());
 }

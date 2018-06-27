@@ -299,9 +299,12 @@ public:
 			}
 		}
 
-		std::function<std::pair<bool, std::unique_ptr<const libaction::Human>>(size_t, bool)> fuzz_cb
-			= [pos, length, anti_crossing, zoom, zoom_range, zoom_rate, &still_estimators, &zoom_still_estimators, &callback, this]
-				(size_t offset, bool left) -> std::pair<bool, std::unique_ptr<const libaction::Human>>
+		std::function<
+				std::pair<bool, std::unique_ptr<const libaction::Human, std::function<void(const libaction::Human *)>>>
+				(size_t, bool)>
+		fuzz_cb = [pos, length, anti_crossing, zoom, zoom_range, zoom_rate, &still_estimators, &zoom_still_estimators, &callback, this]
+			(size_t offset, bool left)
+				-> std::pair<bool, std::unique_ptr<const libaction::Human, std::function<void(const libaction::Human *)>>>
 		{
 			return fuzz_callback(pos, length, anti_crossing, zoom, zoom_range, zoom_rate,
 				**still_estimators.begin(), **zoom_still_estimators.begin(),
@@ -746,7 +749,11 @@ private:
 	}
 
 	template<typename StillEstimator, typename ImagePtr>
-	std::pair<bool, std::unique_ptr<const libaction::Human>>
+	std::pair<
+		bool,
+		std::unique_ptr<const libaction::Human,
+			std::function<void(const libaction::Human *)>>
+		>
 	fuzz_callback(size_t pos, size_t length, bool anti_crossing,
 		bool zoom, size_t zoom_range, size_t zoom_rate,
 		StillEstimator &still_estimator,
@@ -807,15 +814,22 @@ private:
 
 			auto anti_crossing_result = anti_crossing::anti_crossing(
 				*result.second, left_human.second, right_human.second);
-			return std::make_pair(true, std::move(anti_crossing_result));
+
+			std::unique_ptr<const libaction::Human,
+				std::function<void(const libaction::Human *)>> human_ptr(
+					anti_crossing_result.release(),
+					[] (const libaction::Human *ptr) { delete ptr; });
+
+			return std::make_pair(true, std::move(human_ptr));
 		}
 
-		std::unique_ptr<const libaction::Human> human_ptr;
+		std::unique_ptr<const libaction::Human,
+			std::function<void(const libaction::Human *)>> human_ptr;
 		if (result.first && result.second) {
-			human_ptr = std::unique_ptr<const libaction::Human>(
-				result.second,
-				[] (const libaction::Human *) {}
-			);
+			human_ptr = std::unique_ptr<const libaction::Human,
+				std::function<void(const libaction::Human *)>>(
+					result.second,
+					[] (const libaction::Human *) {});
 		}
 
 		return std::make_pair(result.first, std::move(human_ptr));
