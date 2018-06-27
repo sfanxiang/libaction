@@ -151,13 +151,10 @@ inline std::unique_ptr<libaction::Human> zoom_estimate(
 
 	std::tie(x1, x2, y1, y2) = std::tie(bound_x1, bound_x2, bound_y1, bound_y2);
 
-	float x_expand = (x2 - x1) / 5.0f;
-	float y_expand = (y2 - y1) / 5.0f;
-
-	x1 -= x_expand;
-	x2 += x_expand;
-	y1 -= y_expand;
-	y2 += y_expand;
+	x1 -= (x2 - x1) / 5.0f;
+	x2 += (x2 - x1) / 5.0f;
+	y1 -= (y2 - y1) / 5.0f;
+	y2 += (y2 - y1) / 5.0f;
 
 	x1 = std::max(x1, +0.0f);
 	x2 = std::min(x2, 1.0f);
