@@ -124,7 +124,7 @@ int main(int argc, char *argv[])
 			auto humans = motion_estimator.estimate(i, num_images,
 				fuzz_range,
 				true, zoom_range, zoom_rate,
-				still_estimator_ptrs, callback);
+				still_estimator_ptrs, still_estimator_ptrs, callback);
 
 			// show results
 			std::cout << "======== Image #" << i << " ========" << std::endl;

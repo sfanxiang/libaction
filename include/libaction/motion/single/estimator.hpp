@@ -67,6 +67,11 @@ public:
 	///                              pose estimators, whose `estimate` method
 	///                              must accept any image conforming to the
 	///                              Boost.MultiArray concept.
+	/// @param[in]  zoom_still_estimators Estimators for zoom estimation. Can
+	///                                   be identical to `still_estimators`.
+	///                                   Must have the same number of elements
+	///                                   as `still_estimators` does. See the
+	///                                   description of `still_estimators`.
 	/// @param[in]  callback    A callback function allowing random access to
 	///                         the image frame at `pos`. The callback should
 	///                         return a valid pointer to the image, which must
@@ -79,13 +84,15 @@ public:
 	/// @exception              std::runtime_error
 	/// @sa                     still::single::Estimator and
 	///                         still::single::zoom::zoom_estimate
-	template<typename StillEstimator, typename ImagePtr>
+	template<typename StillEstimator, typename ZoomStillEstimator,
+		typename ImagePtr>
 	inline std::unique_ptr<std::unordered_map<size_t, libaction::Human>>
 	estimate(
 		size_t pos, size_t length,
 		size_t fuzz_range,
 		bool zoom, size_t zoom_range, size_t zoom_rate,
 		const std::vector<StillEstimator*> &still_estimators,
+		const std::vector<ZoomStillEstimator*> &zoom_still_estimators,
 		const std::function<ImagePtr(size_t pos)> &callback
 	) {
 		if (length == 0)
@@ -96,6 +103,9 @@ public:
 			throw std::runtime_error("zoom_rate == 0");
 		if (still_estimators.empty())
 			throw std::runtime_error("still_estimators is empty");
+		if (still_estimators.size() != zoom_still_estimators.size())
+			throw std::runtime_error("still_estimators and "
+				"zoom_still_estimators have different sizes");
 
 		if (still_estimators.size() > 1) {
 			// multi-thread support (preprocessing)
@@ -221,16 +231,24 @@ public:
 
 				std::vector<std::thread> threads;
 
-				for (auto &estimator: still_estimators) {
+				auto it = still_estimators.begin();
+				auto zoom_it = zoom_still_estimators.begin();
+
+				for (; it != still_estimators.end()
+						&& zoom_it != zoom_still_estimators.end();
+					it++, zoom_it++)
+				{
 					statuses.push_back(std::unique_ptr<bool>(
 						new bool(false)));
 
 					threads.push_back(std::thread(
 						std::bind(
 							&Estimator::concurrent_preestimate<
-								StillEstimator, ImagePtr>, this,
+								StillEstimator, ZoomStillEstimator, ImagePtr>,
+							this,
 							length, zoom, zoom_range, zoom_rate,
-							std::ref(*estimator), std::cref(callback),
+							std::ref(**it), std::ref(**zoom_it),
+							std::cref(callback),
 							std::ref(queue), std::ref(extra_queue),
 							std::ref(mutex), std::ref(cv),
 							std::ref(*statuses.back()), std::ref(end))));
@@ -274,11 +292,12 @@ public:
 		}
 
 		std::function<std::pair<bool, const libaction::Human *>(size_t, bool)> fuzz_cb
-			= [pos, length, zoom, zoom_range, zoom_rate, &still_estimators, &callback, this]
+			= [pos, length, zoom, zoom_range, zoom_rate, &still_estimators, &zoom_still_estimators, &callback, this]
 				(size_t offset, bool left) -> std::pair<bool, const libaction::Human *>
 		{
 			return fuzz_callback(pos, length, zoom, zoom_range, zoom_rate,
-				still_estimators, callback, offset, left);
+				**still_estimators.begin(), **zoom_still_estimators.begin(),
+				callback, offset, left);
 		};
 
 		auto human = detail::fuzz::fuzz(fuzz_range, fuzz_cb);
@@ -389,10 +408,12 @@ private:
 	}
 
 	/// Estimate one for concurrent(multithread) estimation.
-	template<typename StillEstimator, typename ImagePtr>
+	template<typename StillEstimator, typename ZoomStillEstimator,
+		typename ImagePtr>
 	void concurrent_preestimate_one(
 		size_t length, bool zoom, size_t zoom_range, size_t zoom_rate,
 		StillEstimator &still_estimator,
+		ZoomStillEstimator &zoom_still_estimator,
 		const std::function<ImagePtr(size_t pos)> &callback,
 		std::list<std::pair<size_t, bool>> &queue,
 		std::list<std::pair<size_t, bool>> &extra_queue,
@@ -488,13 +509,13 @@ private:
 				>;
 				std::function<std::unique_ptr<libaction::Human>
 					(const zoom_cb_arg&)> zoom_cb =
-				[&still_estimator, &lock] (const zoom_cb_arg &image_to_estimate)
-				{
+				[&zoom_still_estimator, &lock]
+				(const zoom_cb_arg &image_to_estimate) {
 					// unlock and estimate
 					lock.unlock();
 					try {
 						auto result = estimate_still_pose_from_image(
-							image_to_estimate, still_estimator);
+							image_to_estimate, zoom_still_estimator);
 						lock.lock();
 						return result;
 					} catch (const std::runtime_error &) {
@@ -533,10 +554,12 @@ private:
 		}
 	}
 
-	template<typename StillEstimator, typename ImagePtr>
+	template<typename StillEstimator, typename ZoomStillEstimator,
+		typename ImagePtr>
 	void concurrent_preestimate(
 		size_t length, bool zoom, size_t zoom_range, size_t zoom_rate,
 		StillEstimator &still_estimator,
+		ZoomStillEstimator &zoom_still_estimator,
 		const std::function<ImagePtr(size_t pos)> &callback,
 		std::list<std::pair<size_t, bool>> &queue,
 		std::list<std::pair<size_t, bool>> &extra_queue,
@@ -552,7 +575,7 @@ private:
 
 				concurrent_preestimate_one(
 					length, zoom, zoom_range, zoom_rate,
-					still_estimator, callback,
+					still_estimator, zoom_still_estimator, callback,
 					queue, extra_queue, lock
 				);
 
@@ -579,12 +602,11 @@ private:
 	std::pair<bool, const libaction::Human *>
 	fuzz_callback(size_t pos, size_t length,
 		bool zoom, size_t zoom_range, size_t zoom_rate,
-		const std::vector<StillEstimator*> &still_estimators,
+		StillEstimator &still_estimator,
+		StillEstimator &zoom_still_estimator,
 		const std::function<ImagePtr(size_t pos)> &callback,
 		size_t offset, bool left)
 	{
-		auto &still_estimator = **still_estimators.begin();
-
 		if (pos >= length)
 			return std::make_pair(false, nullptr);
 
@@ -684,9 +706,9 @@ private:
 				>;
 				std::function<std::unique_ptr<libaction::Human>
 					(const zoom_cb_arg&)> zoom_cb =
-				[&still_estimator] (const zoom_cb_arg &image_to_estimate) {
+				[&zoom_still_estimator] (const zoom_cb_arg &image_to_estimate) {
 					return estimate_still_pose_from_image(image_to_estimate,
-						still_estimator);
+						zoom_still_estimator);
 				};
 				auto human = libaction::still::single::zoom::zoom_estimate(
 					*image, *unzoomed_it->second, hints, zoom_cb);
