@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
 	if (argc != 12) {
 		std::cerr << "Usage: <raw image files prefix> <raw image files suffix> "
 			"<number of images> <image height> <image width> "
-			"<graph file> <graph height> <graph width> <zoom>"
+			"<graph file> <graph height> <graph width> <zoom> "
 			"<concurrent estimations> <threads per estimation>"
 			<< std::endl << std::endl
 			<< "For example, if <raw image files prefix> is \"image\", "
