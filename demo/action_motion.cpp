@@ -52,10 +52,10 @@ static std::unique_ptr<const boost::multi_array<uint8_t, 3>> motion_callback(
 
 int main(int argc, char *argv[])
 {
-	if (argc != 11) {
+	if (argc != 12) {
 		std::cerr << "Usage: <raw image files prefix> <raw image files suffix> "
 			"<number of images> <image height> <image width> "
-			"<graph file> <graph height> <graph width> "
+			"<graph file> <graph height> <graph width> <zoom>"
 			"<concurrent estimations> <threads per estimation>"
 			<< std::endl << std::endl
 			<< "For example, if <raw image files prefix> is \"image\", "
@@ -82,8 +82,9 @@ int main(int argc, char *argv[])
 		const std::string graph_file = argv[6];
 		const size_t graph_height = std::stoul(argv[7]);
 		const size_t graph_width = std::stoul(argv[8]);
-		const size_t concurrent_estimations = std::stoul(argv[9]);
-		const size_t threads_per_estimation = std::stoul(argv[10]);
+		const bool zoom = (std::stoul(argv[9]) != 0);
+		const size_t concurrent_estimations = std::stoul(argv[10]);
+		const size_t threads_per_estimation = std::stoul(argv[11]);
 
 		if (num_images == 0)
 			throw std::runtime_error("<number of images> is 0");
@@ -122,8 +123,8 @@ int main(int argc, char *argv[])
 		for (size_t i = 0; i < num_images; i++) {
 			// do estimation
 			auto humans = motion_estimator.estimate(i, num_images,
-				fuzz_range,
-				true, zoom_range, zoom_rate,
+				fuzz_range, true,
+				zoom, zoom_range, zoom_rate,
 				still_estimator_ptrs, still_estimator_ptrs, callback);
 
 			// show results
