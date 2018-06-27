@@ -57,7 +57,7 @@ public:
 	///                         The distance between the right frame and the
 	///                         left frame is at most `fuzz_range`. To turn off
 	///                         fuzz estimation, set `fuzz_range` to 0.
-	/// @param[in]  anti_crossing Whether to enable anti crossing.
+	/// @param[in]  anti_crossing   Whether to enable anti crossing.
 	/// @param[in]  zoom        Whether zoom estimation should be enabled.
 	/// @param[in]  zoom_range  The range of images used for zoom reestimation.
 	///                         If `zoom_range` is 0, or no useful image is
@@ -65,15 +65,16 @@ public:
 	///                         parameter is used.
 	/// @param[in]  zoom_rate   The stride used for zoom reestimation. Must be
 	///                         greater than 0.
-	/// @param[in]  still_estimators A vector of one or more initialized human
-	///                              pose estimators, whose `estimate` method
-	///                              must accept any image conforming to the
-	///                              Boost.MultiArray concept.
-	/// @param[in]  zoom_still_estimators Estimators for zoom estimation. Can
-	///                                   be identical to `still_estimators`.
-	///                                   Must have the same number of elements
-	///                                   as `still_estimators` does. See the
-	///                                   description of `still_estimators`.
+	/// @param[in]  still_estimators    A vector of one or more initialized
+	///                                 human pose estimators, whose `estimate`
+	///                                 method must accept any image conforming
+	///                                 to the Boost.MultiArray concept.
+	/// @param[in]  zoom_still_estimators   Estimators for zoom estimation. Can
+	///                                     be identical to `still_estimators`.
+	///                                     Must have the same number of
+	///                                     elements as `still_estimators` does.
+	///                                     See the description of
+	///                                     `still_estimators`.
 	/// @param[in]  callback    A callback function allowing random access to
 	///                         the image frame at `pos`. The callback should
 	///                         return a valid pointer to the image, which must
