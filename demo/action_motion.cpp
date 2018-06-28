@@ -123,7 +123,7 @@ int main(int argc, char *argv[])
 		for (size_t i = 0; i < num_images; i++) {
 			// do estimation
 			auto humans = motion_estimator.estimate(i, num_images,
-				fuzz_range, true,
+				fuzz_range, { }, true,
 				zoom, zoom_range, zoom_rate,
 				still_estimator_ptrs, still_estimator_ptrs, callback);
 

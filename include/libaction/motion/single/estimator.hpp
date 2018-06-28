@@ -16,6 +16,7 @@
 
 #include <boost/multi_array.hpp>
 #include <algorithm>
+#include <cmath>
 #include <condition_variable>
 #include <cstdint>
 #include <functional>
@@ -56,6 +57,11 @@ public:
 	/// @param[in]  fuzz_range  The range of images used for fuzz estimation.
 	///                         To turn off fuzz estimation, set `fuzz_range`
 	///                         to 0.
+	/// @param[in]  max_lengths Maximum lengths of body connections. The tuple
+	///                         has a format of (from, to, length). If a
+	///                         pair of body part (from, to) has a distance
+	///                         longer than the length specified, the "to" part
+	///                         will be removed before fuzz estimation.
 	/// @param[in]  anti_crossing   Whether to enable anti crossing.
 	/// @param[in]  zoom        Whether to enable zoom reestimation.
 	/// @param[in]  zoom_range  The range of images used for zoom reestimation.
@@ -89,7 +95,11 @@ public:
 	inline std::unique_ptr<std::unordered_map<size_t, libaction::Human>>
 	estimate(
 		size_t pos, size_t length,
-		size_t fuzz_range, bool anti_crossing,
+		size_t fuzz_range,
+		const std::vector<std::tuple<
+			libaction::BodyPart::PartIndex, libaction::BodyPart::PartIndex,
+			float>> &max_lengths,
+		bool anti_crossing,
 		bool zoom, size_t zoom_range, size_t zoom_rate,
 		const std::vector<StillEstimator*> &still_estimators,
 		const std::vector<ZoomStillEstimator*> &zoom_still_estimators,
@@ -296,13 +306,14 @@ public:
 		}
 
 		std::function<
-				std::pair<bool, std::unique_ptr<const libaction::Human, std::function<void(const libaction::Human *)>>>
+				std::pair<bool, std::unique_ptr<const libaction::Human>>
 				(size_t, bool)>
-		fuzz_cb = [pos, length, anti_crossing, zoom, zoom_range, zoom_rate, &still_estimators, &zoom_still_estimators, &callback, this]
+		fuzz_cb = [pos, length, &max_lengths, anti_crossing, zoom, zoom_range, zoom_rate, &still_estimators, &zoom_still_estimators, &callback, this]
 			(size_t offset, bool left)
-				-> std::pair<bool, std::unique_ptr<const libaction::Human, std::function<void(const libaction::Human *)>>>
+				-> std::pair<bool, std::unique_ptr<const libaction::Human>>
 		{
-			return fuzz_callback(pos, length, anti_crossing, zoom, zoom_range, zoom_rate,
+			return fuzz_callback(pos, length, max_lengths, anti_crossing,
+				zoom, zoom_range, zoom_rate,
 				**still_estimators.begin(), **zoom_still_estimators.begin(),
 				callback, offset, left);
 		};
@@ -750,7 +761,8 @@ private:
 		std::unique_ptr<const libaction::Human,
 			std::function<void(const libaction::Human *)>>
 		>
-	fuzz_callback(size_t pos, size_t length, bool anti_crossing,
+	fuzz_callback_before_max_lengths(size_t pos, size_t length,
+		bool anti_crossing,
 		bool zoom, size_t zoom_range, size_t zoom_rate,
 		StillEstimator &still_estimator,
 		StillEstimator &zoom_still_estimator,
@@ -829,6 +841,52 @@ private:
 		}
 
 		return std::make_pair(result.first, std::move(human_ptr));
+	}
+
+	template<typename StillEstimator, typename ImagePtr>
+	std::pair<bool, std::unique_ptr<const libaction::Human>>
+	fuzz_callback(size_t pos, size_t length,
+		const std::vector<std::tuple<
+			libaction::BodyPart::PartIndex, libaction::BodyPart::PartIndex,
+			float>> &max_lengths,
+		bool anti_crossing,
+		bool zoom, size_t zoom_range, size_t zoom_rate,
+		StillEstimator &still_estimator,
+		StillEstimator &zoom_still_estimator,
+		const std::function<ImagePtr(size_t pos)> &callback,
+		size_t offset, bool left)
+	{
+		auto result = fuzz_callback_before_max_lengths(pos, length,
+			anti_crossing,
+			zoom, zoom_range, zoom_rate,
+			still_estimator, zoom_still_estimator, callback,
+			offset, left);
+
+		std::pair<bool, std::unique_ptr<libaction::Human>> ret{};
+		ret.first = result.first;
+		if (result.first && result.second) {
+			ret.second = std::unique_ptr<libaction::Human>(
+				new libaction::Human(*result.second));
+		}
+
+		if (ret.first && ret.second) {
+			for (auto &arg: max_lengths) {
+				auto from = ret.second->body_parts().find(std::get<0>(arg));
+				if (from == ret.second->body_parts().end())
+					continue;
+				auto to = ret.second->body_parts().find(std::get<1>(arg));
+				if (to == ret.second->body_parts().end())
+					continue;
+
+				if (std::sqrt((from->second.x() - to->second.x()) * (from->second.x() - to->second.x())
+						+ (from->second.y() - to->second.y()) * (from->second.y() - to->second.y()))
+						> std::get<2>(arg)) {
+					ret.second->body_parts().erase(to);
+				}
+			}
+		}
+
+		return ret;
 	}
 
 	/// Get the processed human pose to return to the user.
