@@ -84,7 +84,7 @@ inline std::unique_ptr<libaction::Human> anti_crossing(
 					if (!left_cross &&
 							horizontal_dist(target_0->second, side_0->second)
 							> horizontal_dist(target_0->second, target_1->second)
-								* 5.4f) {
+								* 8.0f) {
 						// left moved to right
 						left_cross = true;
 					}
@@ -93,7 +93,7 @@ inline std::unique_ptr<libaction::Human> anti_crossing(
 					if (!right_cross &&
 							horizontal_dist(target_1->second, side_1->second)
 							> horizontal_dist(target_1->second, target_0->second)
-								* 5.4f) {
+								* 8.0f) {
 						// right moved to left
 						right_cross = true;
 					}
@@ -104,7 +104,7 @@ inline std::unique_ptr<libaction::Human> anti_crossing(
 					if (!left_cross &&
 							horizontal_dist(target_0->second, side_0->second)
 							> horizontal_dist(target_0->second, side_1->second)
-								* 5.4f) {
+								* 8.0f) {
 						// left moved to right
 						left_cross = true;
 					}
@@ -115,7 +115,7 @@ inline std::unique_ptr<libaction::Human> anti_crossing(
 					if (!right_cross &&
 							horizontal_dist(target_1->second, side_1->second)
 							> horizontal_dist(target_1->second, side_0->second)
-								* 5.4f) {
+								* 8.0f) {
 						// right moved to left
 						right_cross = true;
 					}
