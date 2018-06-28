@@ -101,9 +101,9 @@ public:
 
 	/// Construct from a buffer.
 
-	/// @param[in]  graph_buffer The buffer containing the graph. The ownership
-	///                          of the buffer is not transferred and it should
-	///                          remain valid until Estimator is destroyed.
+	/// @param[in]  graph_buffer    The buffer containing the graph. The ownership
+	///                         of the buffer is not transferred and it should
+	///                         remain valid until Estimator is destroyed.
 	/// @param[in]  buffer_size The size of the buffer.
 	/// @param[in]  threads     Threads used when invoking the model, or 0 for
 	///                         default.

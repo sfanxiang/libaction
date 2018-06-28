@@ -11,8 +11,8 @@
 #include "../../body_part.hpp"
 #include "../../human.hpp"
 #include "../../still/single/zoom.hpp"
-#include "../detail/fuzz.hpp"
 #include "anti_crossing.hpp"
+#include "fuzz.hpp"
 
 #include <boost/multi_array.hpp>
 #include <algorithm>
@@ -54,27 +54,24 @@ public:
 	/// @param[in]  length      The total number of frames. Must be greater than
 	///                         `pos`.
 	/// @param[in]  fuzz_range  The range of images used for fuzz estimation.
-	///                         The distance between the right frame and the
-	///                         left frame is at most `fuzz_range`. To turn off
-	///                         fuzz estimation, set `fuzz_range` to 0.
+	///                         To turn off fuzz estimation, set `fuzz_range`
+	///                         to 0.
 	/// @param[in]  anti_crossing   Whether to enable anti crossing.
-	/// @param[in]  zoom        Whether zoom estimation should be enabled.
+	/// @param[in]  zoom        Whether to enable zoom reestimation.
 	/// @param[in]  zoom_range  The range of images used for zoom reestimation.
-	///                         If `zoom_range` is 0, or no useful image is
-	///                         found within the range, then a prebuilt zoom
-	///                         parameter is used.
 	/// @param[in]  zoom_rate   The stride used for zoom reestimation. Must be
 	///                         greater than 0.
 	/// @param[in]  still_estimators    A vector of one or more initialized
-	///                                 human pose estimators, whose `estimate`
-	///                                 method must accept any image conforming
-	///                                 to the Boost.MultiArray concept.
+	///                         human pose estimators, whose `estimate` method
+	///                         must accept any image conforming to the
+	///                         Boost.MultiArray concept. If `still_estimators`
+	///                         has multiple elements, the same number of
+	///                         threads will be created.
 	/// @param[in]  zoom_still_estimators   Estimators for zoom estimation. Can
-	///                                     be identical to `still_estimators`.
-	///                                     Must have the same number of
-	///                                     elements as `still_estimators` does.
-	///                                     See the description of
-	///                                     `still_estimators`.
+	///                         be identical to `still_estimators`. Must have
+	///                         the same number of elements as
+	///                         `still_estimators` does. See the description of
+	///                         `still_estimators`.
 	/// @param[in]  callback    A callback function allowing random access to
 	///                         the image frame at `pos`. The callback should
 	///                         return a valid pointer to the image, which must
@@ -85,9 +82,8 @@ public:
 	///                         one element.
 	/// @return                 A map of humans from their index numbers.
 	/// @exception              std::runtime_error
-	/// @sa                     motion::single::anti_crossing::anti_crossing,
-	///                         still::single::Estimator and
-	///                         still::single::zoom::zoom_estimate
+	/// @sa                     anti_crossing, fuzz, still::single::Estimator
+	///                         and still::single::zoom
 	template<typename StillEstimator, typename ZoomStillEstimator,
 		typename ImagePtr>
 	inline std::unique_ptr<std::unordered_map<size_t, libaction::Human>>
@@ -126,7 +122,7 @@ public:
 			// populate the queue
 			size_t range_l, range_r;
 			std::tie(range_l, range_r) =
-				detail::fuzz::get_fuzz_lr(pos, length, fuzz_range);
+				fuzz::get_fuzz_lr(pos, length, fuzz_range);
 			if (anti_crossing && range_l > 0)
 				range_l--;
 			if (anti_crossing && range_r < length - 1)
@@ -311,7 +307,7 @@ public:
 				callback, offset, left);
 		};
 
-		auto human = detail::fuzz::fuzz(fuzz_range, fuzz_cb);
+		auto human = fuzz::fuzz(fuzz_range, fuzz_cb);
 
 		return get_human_pose(human);
 	}

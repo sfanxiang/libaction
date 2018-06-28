@@ -62,9 +62,25 @@ inline std::pair<float, float> coord_translate(
 
 }
 
+/// Get the recommended range for zoom estimation.
+
+/// @param[in]  pos         The current index of the frame, starting from 0.
+/// @param[in]  length      The total number of frames. Must be greater than
+///                         `pos`.
+/// @param[in]  zoom_range  The range of images used for zoom reestimation.
+///                         The left and right bound will be `zoom_range`
+///                         frames away from `pos`, if the result is a valid
+///                         frame number.
+/// @return                 The left and the right bound, inclusively.
+/// @exception              std::runtime_error
 inline std::pair<size_t, size_t>
 get_zoom_lr(size_t pos, size_t length, size_t zoom_range)
 {
+	if (length == 0)
+		throw std::runtime_error("length == 0");
+	if (length <= pos)
+		throw std::runtime_error("length <= pos");
+
 	size_t l = (pos >= zoom_range ? pos - zoom_range : 0);
 	size_t r = (length - pos > zoom_range ? pos + zoom_range : length - 1);
 

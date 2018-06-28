@@ -5,8 +5,8 @@
  * This Source Code Form is "Incompatible With Secondary Licenses", as
  * defined by the Mozilla Public License, v. 2.0. */
 
-#ifndef LIBACTION__MOTION__DETAIL__FUZZ_HPP_
-#define LIBACTION__MOTION__DETAIL__FUZZ_HPP_
+#ifndef LIBACTION__MOTION__SINGLE__FUZZ_HPP_
+#define LIBACTION__MOTION__SINGLE__FUZZ_HPP_
 
 #include "../../body_part.hpp"
 #include "../../human.hpp"
@@ -25,7 +25,7 @@ namespace libaction
 {
 namespace motion
 {
-namespace detail
+namespace single
 {
 namespace fuzz
 {
@@ -411,9 +411,25 @@ inline libaction::BodyPart get_absolute_fuzz_part(
 
 }
 
+/// Retrieve the widest possible range for fuzz estimation.
+
+/// @param[in]  pos         The current index of the frame, starting from 0.
+/// @param[in]  length      The total number of frames. Must be greater than
+///                         `pos`.
+/// @param[in]  fuzz_range  The range of images used for fuzz estimation. The
+///                         left and right bound will be `fuzz_range - 1`
+///                         frames away from `pos`, if the result is a valid
+///                         frame number.
+/// @return                 The left and the right bound, inclusively.
+/// @exception              std::runtime_error
 inline std::pair<size_t, size_t>
 get_fuzz_lr(size_t pos, size_t length, size_t fuzz_range)
 {
+	if (length == 0)
+		throw std::runtime_error("length == 0");
+	if (length <= pos)
+		throw std::runtime_error("length <= pos");
+
 	size_t l = pos;
 	size_t r = pos;
 
@@ -431,7 +447,29 @@ get_fuzz_lr(size_t pos, size_t length, size_t fuzz_range)
 	return std::make_pair(l, r);
 }
 
-// TODO: make this public single
+/// Fuzz estimation for a single person.
+
+/// @param[in]  fuzz_range  The range of images used for fuzz estimation.
+///                         The distance between the right frame and the left
+///                         frame used in each recipe is at most `fuzz_range`.
+///                         This function has no effect if `fuzz_range` is 0.
+/// @param[in]  callback    Callback for obtaining results from estimators.
+///                         `relative_pos` and `left` locates the position of
+///                         image to be obtained. `left` controls whether the
+///                         frame to be obtained is to the left or to the right
+///                         of the target frame, and `relative_pos` controls
+///                         the distance from the target frame. If
+///                         `relative_pos` is 0, the target frame should be
+///                         returned. The first return value of `callback`
+///                         should indicate whether the frame is in bound at
+///                         `relative_pos`. The second return value is only
+///                         used when the first value is true, in which case
+///                         the second value should be a human estimation, or
+///                         `nullptr` if the person does not exist at the
+///                         location.
+/// @warning                The person must exist at the target frame.
+/// @return                 A human inferred from the image.
+/// @exception              std::runtime_error
 template<typename HumanPtr>
 inline std::unique_ptr<libaction::Human> fuzz(
 	size_t fuzz_range,

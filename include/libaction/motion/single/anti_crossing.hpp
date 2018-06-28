@@ -46,7 +46,7 @@ inline auto dist(const libaction::BodyPart &x, const libaction::BodyPart &y)
 
 }
 
-/// Process an estimation to reduce crossing results.
+/// Process an estimation of a single person to reduce crossing results.
 
 /// @param[in]  target      The result from a previous estimation. Only a single
 ///                         human (with at least one body part) is supported.
