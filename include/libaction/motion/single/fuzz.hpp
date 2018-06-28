@@ -417,7 +417,7 @@ inline libaction::BodyPart get_absolute_fuzz_part(
 /// @param[in]  length      The total number of frames. Must be greater than
 ///                         `pos`.
 /// @param[in]  fuzz_range  The range of images used for fuzz estimation. The
-///                         left and right bound will be `fuzz_range - 1`
+///                         left and right bound will be `(fuzz_range - 1)`
 ///                         frames away from `pos`, if the result is a valid
 ///                         frame number.
 /// @return                 The left and the right bound, inclusively.
