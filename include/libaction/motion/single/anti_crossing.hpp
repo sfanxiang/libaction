@@ -78,42 +78,46 @@ inline std::unique_ptr<libaction::Human> anti_crossing(
 			auto side_0 = side->body_parts().find(std::get<0>(current));
 			auto side_1 = side->body_parts().find(std::get<1>(current));
 
-			if (side_0 != side->body_parts().end() &&
-					side_1 != side->body_parts().end()) {
-				if (target_0 != target.body_parts().end()) {
+			if (target_0 != target.body_parts().end() &&
+					target_1 != target.body_parts().end()) {
+				if (side_0 != side->body_parts().end()) {
 					if (!left_cross &&
 							horizontal_dist(target_0->second, side_0->second)
-							> horizontal_dist(target_0->second, side_1->second)
-								* 8.0f) {
+							> horizontal_dist(target_0->second, target_1->second)
+								* 5.4f) {
+						// left moved to right
 						left_cross = true;
 					}
 				}
-				if (target_1 != target.body_parts().end()) {
+				if (side_1 != side->body_parts().end()) {
 					if (!right_cross &&
 							horizontal_dist(target_1->second, side_1->second)
-							> horizontal_dist(target_1->second, side_0->second)
-								* 8.0f) {
+							> horizontal_dist(target_1->second, target_0->second)
+								* 5.4f) {
+						// right moved to left
 						right_cross = true;
 					}
 				}
-			} else if (side_0 != side->body_parts().end()) {
-				if (target_0 != target.body_parts().end() &&
-						target_1 != target.body_parts().end()) {
-					if ((!left_cross || !right_cross) &&
+			} else if (target_0 != target.body_parts().end()) {
+				if (side_0 != side->body_parts().end() &&
+						side_1 != side->body_parts().end()) {
+					if (!left_cross &&
 							horizontal_dist(target_0->second, side_0->second)
-							> horizontal_dist(target_1->second, side_0->second)
-								* 8.0f) {
-						left_cross = right_cross = true;
+							> horizontal_dist(target_0->second, side_1->second)
+								* 5.4f) {
+						// left moved to right
+						left_cross = true;
 					}
 				}
-			} else if (side_1 != side->body_parts().end()) {
-				if (target_0 != target.body_parts().end() &&
-						target_1 != target.body_parts().end()) {
-					if ((!left_cross || !right_cross) &&
+			} else if (target_1 != target.body_parts().end()) {
+				if (side_0 != side->body_parts().end() &&
+						side_1 != side->body_parts().end()) {
+					if (!right_cross &&
 							horizontal_dist(target_1->second, side_1->second)
-							> horizontal_dist(target_0->second, side_1->second)
-								* 8.0f) {
-						left_cross = right_cross = true;
+							> horizontal_dist(target_1->second, side_0->second)
+								* 5.4f) {
+						// right moved to left
+						right_cross = true;
 					}
 				}
 			}
