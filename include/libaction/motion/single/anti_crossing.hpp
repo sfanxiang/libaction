@@ -67,6 +67,24 @@ inline std::unique_ptr<libaction::Human> anti_crossing(
 	auto result = std::unique_ptr<libaction::Human>(new libaction::Human(
 		target));
 
+	float size = 0.0f;
+
+	if (!target.body_parts().empty()) {
+		float x1 = target.body_parts().begin()->second.x();
+		float x2 = x1;
+		float y1 = target.body_parts().begin()->second.y();
+		float y2 = y1;
+
+		for (auto &part: target.body_parts()) {
+			x1 = std::min(x1, part.second.x());
+			x2 = std::max(x2, part.second.x());
+			y1 = std::min(y1, part.second.y());
+			y2 = std::max(y2, part.second.y());
+		}
+
+		size = std::max(size, std::max(x2 - x1, y2 - y1));
+	}
+
 	// notice the confusion between left frame / right frame and
 	// left body part / right body part
 
@@ -99,6 +117,14 @@ inline std::unique_ptr<libaction::Human> anti_crossing(
 						// left moved to right
 						left_cross = true;
 					}
+					if (!right_cross &&
+							dist(target_0->second, target_1->second) * 16.0f
+								< size &&
+							dist(target_0->second, side_0->second) * 8.0f
+								< size) {
+						// right moved to left
+						right_cross = true;
+					}
 				}
 				if (side_1 != side->body_parts().end()) {
 					if (!right_cross &&
@@ -107,6 +133,14 @@ inline std::unique_ptr<libaction::Human> anti_crossing(
 								* 8.0f) {
 						// right moved to left
 						right_cross = true;
+					}
+					if (!left_cross &&
+							dist(target_0->second, target_1->second) * 16.0f
+								< size &&
+							dist(target_1->second, side_1->second) * 8.0f
+								< size) {
+						// left moved to right
+						left_cross = true;
 					}
 				}
 			} else if (target_0 != target.body_parts().end()) {
