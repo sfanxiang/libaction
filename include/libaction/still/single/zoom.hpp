@@ -94,7 +94,8 @@ get_zoom_lr(size_t pos, size_t length, size_t zoom_range)
 /// @param[in]  human       The result from a previous estimation. Only a single
 ///                         human (with at least one body part) is supported.
 /// @param[in]  human_hints Hints of the location of the human, usually results
-///                         from the frames around this image (in a video).
+///                         from the frames within the range returned by
+///                         get_zoom_lr(), except for `human`.
 /// @param[in]  estimator_callback  Callback which, when called, returns the
 ///                         same person as `human`, as found in the given image.
 /// @return                 A human inferred from the image.

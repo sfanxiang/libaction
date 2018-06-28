@@ -466,7 +466,10 @@ get_fuzz_lr(size_t pos, size_t length, size_t fuzz_range)
 ///                         used when the first value is true, in which case
 ///                         the second value should be a human estimation, or
 ///                         `nullptr` if the person does not exist at the
-///                         location.
+///                         location. The callback may be called multiple times
+///                         with the same arguments, so you should consider
+///                         caching the results, at least for all frames within
+///                         the range returned by get_fuzz_lr().
 /// @warning                The person must exist at the target frame.
 /// @return                 A human inferred from the image.
 /// @exception              std::runtime_error
