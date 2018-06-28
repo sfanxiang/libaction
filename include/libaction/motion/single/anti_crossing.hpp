@@ -26,22 +26,11 @@ namespace anti_crossing
 namespace
 {
 
-template<typename T>
-inline T hypot(T x, T y)
+inline auto horizontal_dist(
+	const libaction::BodyPart &x, const libaction::BodyPart &y)
+-> decltype(x.y())
 {
-	return std::sqrt(x * x + y * y);
-}
-
-template<typename T>
-inline T dist(T x1, T y1, T x2, T y2)
-{
-	return hypot(x1 - x2, y1 - y2);
-}
-
-inline auto dist(const libaction::BodyPart &x, const libaction::BodyPart &y)
-	-> decltype(dist(x.x(), x.y(), y.x(), y.y()))
-{
-	return dist(x.x(), x.y(), y.x(), y.y());
+	return std::abs(x.y() - y.y());
 }
 
 }
@@ -70,9 +59,6 @@ inline std::unique_ptr<libaction::Human> anti_crossing(
 	// notice the confusion between left frame / right frame and
 	// left body part / right body part
 
-	if (!left || !right)
-		return result;
-
 	for (auto current: {
 		std::tuple<id, id>
 		{ id::eye_l, id::eye_r }, { id::ear_l, id::ear_r },
@@ -80,101 +66,69 @@ inline std::unique_ptr<libaction::Human> anti_crossing(
 		{ id::wrist_l, id::wrist_r }, { id::hip_l, id::hip_r },
 		{ id::knee_l, id::knee_r }, { id::ankle_l, id::ankle_r } })
 	{
-		bool left_as_right = true, right_as_left = true;
+		bool left_cross = false, right_cross = false;
 
 		auto target_0 = target.body_parts().find(std::get<0>(current));
 		auto target_1 = target.body_parts().find(std::get<1>(current));
 
 		for (auto side: { left, right }) {
+			if (!side)
+				continue;
+
 			auto side_0 = side->body_parts().find(std::get<0>(current));
 			auto side_1 = side->body_parts().find(std::get<1>(current));
 
 			if (side_0 != side->body_parts().end() &&
 					side_1 != side->body_parts().end()) {
 				if (target_0 != target.body_parts().end()) {
-					if (left_as_right && dist(target_0->second, side_0->second)
-							<= dist(target_0->second, side_1->second) * 8.0f) {
-						left_as_right = false;
+					if (!left_cross &&
+							horizontal_dist(target_0->second, side_0->second)
+							> horizontal_dist(target_0->second, side_1->second)
+								* 8.0f) {
+						left_cross = true;
 					}
-				} else {
-					left_as_right = false;
 				}
 				if (target_1 != target.body_parts().end()) {
-					if (right_as_left && dist(target_1->second, side_1->second)
-							<= dist(target_1->second, side_0->second) * 8.0f) {
-						right_as_left = false;
+					if (!right_cross &&
+							horizontal_dist(target_1->second, side_1->second)
+							> horizontal_dist(target_1->second, side_0->second)
+								* 8.0f) {
+						right_cross = true;
 					}
-				} else {
-					right_as_left = false;
 				}
 			} else if (side_0 != side->body_parts().end()) {
 				if (target_0 != target.body_parts().end() &&
 						target_1 != target.body_parts().end()) {
-					if ((left_as_right || right_as_left) &&
-							dist(target_0->second, side_0->second)
-							<= dist(target_1->second, side_0->second) * 8.0f) {
-						left_as_right = right_as_left = false;
+					if ((!left_cross || !right_cross) &&
+							horizontal_dist(target_0->second, side_0->second)
+							> horizontal_dist(target_1->second, side_0->second)
+								* 8.0f) {
+						left_cross = right_cross = true;
 					}
-				} else {
-					left_as_right = right_as_left = false;
 				}
 			} else if (side_1 != side->body_parts().end()) {
 				if (target_0 != target.body_parts().end() &&
 						target_1 != target.body_parts().end()) {
-					if ((left_as_right || right_as_left) &&
-							dist(target_1->second, side_1->second)
-							<= dist(target_0->second, side_1->second) * 8.0f) {
-						left_as_right = right_as_left = false;
+					if ((!left_cross || !right_cross) &&
+							horizontal_dist(target_1->second, side_1->second)
+							> horizontal_dist(target_0->second, side_1->second)
+								* 8.0f) {
+						left_cross = right_cross = true;
 					}
-				} else {
-					left_as_right = right_as_left = false;
 				}
-			} else {
-				left_as_right = right_as_left = false;
 			}
+
+			if (left_cross && right_cross)
+				break;
 		}
 
-		if (left_as_right && right_as_left) {
-			// exchange
-			result->body_parts().erase(std::get<0>(current));
-			result->body_parts().erase(std::get<1>(current));
-
-			if (target_0 != target.body_parts().end()) {
-				auto body_part = libaction::BodyPart(
-					std::get<1>(current), target_0->second.x(),
-					target_0->second.y(), target_0->second.score());
-				result->body_parts()[body_part.part_index()] = body_part;
-			}
-			if (target_1 != target.body_parts().end()) {
-				auto body_part = libaction::BodyPart(
-					std::get<0>(current), target_1->second.x(),
-					target_1->second.y(), target_1->second.score());
-				result->body_parts()[body_part.part_index()] = body_part;
-			}
-		} else if (left_as_right) {
+		if (left_cross) {
 			// remove left
 			result->body_parts().erase(std::get<0>(current));
-
-			if (target_1 == target.body_parts().end() &&
-					target_0 != target.body_parts().end()) {
-				// move left to right
-				auto body_part = libaction::BodyPart(
-					std::get<1>(current), target_0->second.x(),
-					target_0->second.y(), target_0->second.score());
-				result->body_parts()[body_part.part_index()] = body_part;
-			}
-		} else if (right_as_left) {
+		}
+		if (right_cross) {
 			// remove right
 			result->body_parts().erase(std::get<1>(current));
-
-			if (target_0 == target.body_parts().end() &&
-					target_1 != target.body_parts().end()) {
-				// move right to left
-				auto body_part = libaction::BodyPart(
-					std::get<0>(current), target_1->second.x(),
-					target_1->second.y(), target_1->second.score());
-				result->body_parts()[body_part.part_index()] = body_part;
-			}
 		}
 	}
 
