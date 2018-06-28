@@ -26,11 +26,22 @@ namespace anti_crossing
 namespace
 {
 
-inline auto horizontal_dist(
-	const libaction::BodyPart &x, const libaction::BodyPart &y)
--> decltype(x.y())
+template<typename T>
+inline T hypot(T x, T y)
 {
-	return std::abs(x.y() - y.y());
+	return std::sqrt(x * x + y * y);
+}
+
+template<typename T>
+inline T dist(T x1, T y1, T x2, T y2)
+{
+	return hypot(x1 - x2, y1 - y2);
+}
+
+inline auto dist(const libaction::BodyPart &x, const libaction::BodyPart &y)
+	-> decltype(dist(x.x(), x.y(), y.x(), y.y()))
+{
+	return dist(x.x(), x.y(), y.x(), y.y());
 }
 
 }
@@ -82,8 +93,8 @@ inline std::unique_ptr<libaction::Human> anti_crossing(
 					target_1 != target.body_parts().end()) {
 				if (side_0 != side->body_parts().end()) {
 					if (!left_cross &&
-							horizontal_dist(target_0->second, side_0->second)
-							> horizontal_dist(target_0->second, target_1->second)
+							dist(target_0->second, side_0->second)
+							> dist(target_0->second, target_1->second)
 								* 8.0f) {
 						// left moved to right
 						left_cross = true;
@@ -91,8 +102,8 @@ inline std::unique_ptr<libaction::Human> anti_crossing(
 				}
 				if (side_1 != side->body_parts().end()) {
 					if (!right_cross &&
-							horizontal_dist(target_1->second, side_1->second)
-							> horizontal_dist(target_1->second, target_0->second)
+							dist(target_1->second, side_1->second)
+							> dist(target_1->second, target_0->second)
 								* 8.0f) {
 						// right moved to left
 						right_cross = true;
@@ -102,8 +113,8 @@ inline std::unique_ptr<libaction::Human> anti_crossing(
 				if (side_0 != side->body_parts().end() &&
 						side_1 != side->body_parts().end()) {
 					if (!left_cross &&
-							horizontal_dist(target_0->second, side_0->second)
-							> horizontal_dist(target_0->second, side_1->second)
+							dist(target_0->second, side_0->second)
+							> dist(target_0->second, side_1->second)
 								* 8.0f) {
 						// left moved to right
 						left_cross = true;
@@ -113,8 +124,8 @@ inline std::unique_ptr<libaction::Human> anti_crossing(
 				if (side_0 != side->body_parts().end() &&
 						side_1 != side->body_parts().end()) {
 					if (!right_cross &&
-							horizontal_dist(target_1->second, side_1->second)
-							> horizontal_dist(target_1->second, side_0->second)
+							dist(target_1->second, side_1->second)
+							> dist(target_1->second, side_0->second)
 								* 8.0f) {
 						// right moved to left
 						right_cross = true;
