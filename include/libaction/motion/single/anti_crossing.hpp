@@ -44,6 +44,12 @@ inline auto dist(const libaction::BodyPart &x, const libaction::BodyPart &y)
 	return dist(x.x(), x.y(), y.x(), y.y());
 }
 
+inline auto hdist(const libaction::BodyPart &x, const libaction::BodyPart &y)
+	-> decltype(x.y())
+{
+	return std::abs(x.y() - y.y());
+}
+
 }
 
 /// Process an estimation of a single person to reduce crossing results.
@@ -113,14 +119,21 @@ inline std::unique_ptr<libaction::Human> anti_crossing(
 					if (!left_cross &&
 							dist(target_0->second, side_0->second)
 							> dist(target_0->second, target_1->second)
+								* 4.0f &&
+							hdist(target_0->second, side_0->second)
+							> hdist(target_0->second, target_1->second)
 								* 8.0f) {
 						// left moved to right
 						left_cross = true;
 					}
 					if (!right_cross &&
-							dist(target_0->second, target_1->second) * 16.0f
+							dist(target_0->second, target_1->second) * 8.0f
 								< size &&
-							dist(target_0->second, side_0->second) * 8.0f
+							dist(target_0->second, side_0->second) * 4.0f
+								< size &&
+							hdist(target_0->second, target_1->second) * 16.0f
+								< size &&
+							hdist(target_0->second, side_0->second) * 8.0f
 								< size) {
 						// right moved to left
 						right_cross = true;
@@ -130,17 +143,39 @@ inline std::unique_ptr<libaction::Human> anti_crossing(
 					if (!right_cross &&
 							dist(target_1->second, side_1->second)
 							> dist(target_1->second, target_0->second)
+								* 4.0f &&
+							hdist(target_1->second, side_1->second)
+							> hdist(target_1->second, target_0->second)
 								* 8.0f) {
 						// right moved to left
 						right_cross = true;
 					}
 					if (!left_cross &&
-							dist(target_0->second, target_1->second) * 16.0f
+							dist(target_0->second, target_1->second) * 8.0f
 								< size &&
-							dist(target_1->second, side_1->second) * 8.0f
+							dist(target_1->second, side_1->second) * 4.0f
+								< size &&
+							hdist(target_0->second, target_1->second) * 16.0f
+								< size &&
+							hdist(target_1->second, side_1->second) * 8.0f
 								< size) {
 						// left moved to right
 						left_cross = true;
+					}
+				}
+				if (side_0 != side->body_parts().end() &&
+						side_1 != side->body_parts().end()) {
+					if ((!left_cross || !right_cross) &&
+							dist(target_0->second, target_1->second)
+							> dist(target_0->second, side_1->second) * 3.0f &&
+							dist(target_0->second, target_1->second)
+							> dist(target_1->second, side_0->second) * 3.0f &&
+							hdist(target_0->second, target_1->second)
+							> hdist(target_0->second, side_1->second) * 6.0f &&
+							hdist(target_0->second, target_1->second)
+							> hdist(target_1->second, side_0->second) * 6.0f) {
+						// left-right exchanged
+						left_cross = right_cross = true;
 					}
 				}
 			} else if (target_0 != target.body_parts().end()) {
@@ -149,7 +184,10 @@ inline std::unique_ptr<libaction::Human> anti_crossing(
 					if (!left_cross &&
 							dist(target_0->second, side_0->second)
 							> dist(target_0->second, side_1->second)
-								* 8.0f) {
+								* 3.2f &&
+							hdist(target_0->second, side_0->second)
+							> hdist(target_0->second, side_1->second)
+								* 6.4f) {
 						// left moved to right
 						left_cross = true;
 					}
@@ -160,7 +198,10 @@ inline std::unique_ptr<libaction::Human> anti_crossing(
 					if (!right_cross &&
 							dist(target_1->second, side_1->second)
 							> dist(target_1->second, side_0->second)
-								* 8.0f) {
+								* 3.2f &&
+							hdist(target_1->second, side_1->second)
+							> hdist(target_1->second, side_0->second)
+								* 6.4f) {
 						// right moved to left
 						right_cross = true;
 					}
