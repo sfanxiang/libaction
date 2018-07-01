@@ -51,6 +51,19 @@ public:
 		return body_parts_;
 	}
 
+	/// Serialize.
+
+	/// Conforms to Boost.Serialization.
+	/// @param[in]  ar          Serialization archive.
+	/// @param[in]  version     Archive version.
+	template<class Archive>
+	void serialize(Archive &ar, const unsigned int version)
+	{
+		static_cast<void>(version);
+
+		ar & body_parts_;
+	}
+
 private:
 	std::unordered_map<BodyPart::PartIndex, BodyPart> body_parts_{};
 };

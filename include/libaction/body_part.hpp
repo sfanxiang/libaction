@@ -78,6 +78,22 @@ public:
 	/// @return                 Confidence of the estimation.
 	inline float score() const { return score_; }
 
+	/// Serialize.
+
+	/// Conforms to Boost.Serialization.
+	/// @param[in]  ar          Serialization archive.
+	/// @param[in]  version     Archive version.
+	template<class Archive>
+	void serialize(Archive &ar, const unsigned int version)
+	{
+		static_cast<void>(version);
+
+		ar & static_cast<int>(part_index_);
+		ar & x_;
+		ar & y_;
+		ar & score_;
+	}
+
 private:
 	PartIndex part_index_{PartIndex::end};
 	float x_{}, y_{}, score_{};
@@ -86,19 +102,21 @@ private:
 }
 
 namespace std {
-	/// Hash of libaction::BodyPart::PartIndex.
-	template<>
-	struct hash<libaction::BodyPart::PartIndex>
-	{
-		/// Hash of libaction::BodyPart::PartIndex.
 
-		/// @return                 Hash of libaction::BodyPart::PartIndex.
-		size_t operator()(const libaction::BodyPart::PartIndex &index)
-		const noexcept
-		{
-			return static_cast<size_t>(index);
-		}
-	};
+/// Hash of libaction::BodyPart::PartIndex.
+template<>
+struct hash<libaction::BodyPart::PartIndex>
+{
+	/// Hash of libaction::BodyPart::PartIndex.
+
+	/// @return                 Hash of libaction::BodyPart::PartIndex.
+	size_t operator()(const libaction::BodyPart::PartIndex &index)
+	const noexcept
+	{
+		return static_cast<size_t>(index);
+	}
+};
+
 }
 
 #endif
