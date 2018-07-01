@@ -13,7 +13,9 @@
 #include "../../detail/image.hpp"
 
 #include <boost/multi_array.hpp>
+#include <boost/numeric/conversion/cast.hpp>
 #include <algorithm>
+#include <cstdint>
 #include <memory>
 #include <tuple>
 #include <utility>
@@ -31,33 +33,12 @@ namespace
 {
 
 // translate from cropped coordinates to the original image's
-inline std::pair<float, float> coord_translate(
-	float x, float y,
-	size_t original_height, size_t original_width,
-	size_t crop_x, size_t crop_y,
-	size_t crop_height, size_t crop_width
+inline std::pair<int32_t, int32_t> coord_translate(
+	int32_t x, int32_t y,
+	size_t crop_x, size_t crop_y
 ) {
-	if (crop_height == 0 || crop_width == 0)
-		throw std::runtime_error("crop_height == 0 || crop_width == 0");
-	if (original_height == 0 || original_width == 0)
-		throw std::runtime_error("original_height == 0 || original_width == 0");
-
-	size_t x2 = static_cast<size_t>(static_cast<float>(crop_height) * x);
-	size_t y2 = static_cast<size_t>(static_cast<float>(crop_width) * y);
-
-	x2 = std::min(x2, crop_height - 1);
-	y2 = std::min(y2, crop_width - 1);
-
-	x2 += crop_x;
-	y2 += crop_y;
-
-	x2 = std::min(x2, original_height - 1);
-	y2 = std::min(y2, original_width - 1);
-
-	float x3 = static_cast<float>(x2) / static_cast<float>(original_height);
-	float y3 = static_cast<float>(y2) / static_cast<float>(original_width);
-
-	return {x3, y3};
+	return { boost::numeric_cast<int32_t>(crop_x) + x,
+		boost::numeric_cast<int32_t>(crop_y) + y };
 }
 
 }
@@ -118,12 +99,12 @@ inline std::unique_ptr<libaction::Human> zoom_estimate(
 	if (human.body_parts().empty())
 		return std::unique_ptr<libaction::Human>(new libaction::Human(human));
 
-	float x1 = human.body_parts().begin()->second.x();
-	float x2 = x1;
-	float y1 = human.body_parts().begin()->second.y();
-	float y2 = y1;
+	auto x1 = human.body_parts().begin()->second.x();
+	auto x2 = x1;
+	auto y1 = human.body_parts().begin()->second.y();
+	auto y2 = y1;
 
-	float mid_x = 0.0f, mid_y = 0.0f;
+	int64_t mid_x = 0, mid_y = 0;
 
 	for (auto &part: human.body_parts()) {
 		x1 = std::min(x1, part.second.x());
@@ -131,11 +112,16 @@ inline std::unique_ptr<libaction::Human> zoom_estimate(
 		y1 = std::min(y1, part.second.y());
 		y2 = std::max(y2, part.second.y());
 
-		mid_x += part.second.x() / static_cast<float>(human.body_parts().size());
-		mid_y += part.second.y() / static_cast<float>(human.body_parts().size());
+		mid_x += part.second.x();
+		mid_y += part.second.y();
 	}
 
-	float height = 0.0f, width = 0.0f;
+	if (human.body_parts().size() != 0) {
+		mid_x /= human.body_parts().size();
+		mid_y /= human.body_parts().size();
+	}
+
+	int32_t height = 0.0, width = 0.0;
 
 	for (auto &hint: human_hints) {
 		if (!hint)
@@ -143,10 +129,10 @@ inline std::unique_ptr<libaction::Human> zoom_estimate(
 		if (hint->body_parts().empty())
 			continue;
 
-		float x1 = hint->body_parts().begin()->second.x();
-		float x2 = x1;
-		float y1 = hint->body_parts().begin()->second.y();
-		float y2 = y1;
+		auto x1 = hint->body_parts().begin()->second.x();
+		auto x2 = x1;
+		auto y1 = hint->body_parts().begin()->second.y();
+		auto y2 = y1;
 
 		for (auto &part: hint->body_parts()) {
 			x1 = std::min(x1, part.second.x());
