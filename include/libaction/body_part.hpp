@@ -8,7 +8,6 @@
 #ifndef LIBACTION__BODY_PART_HPP_
 #define LIBACTION__BODY_PART_HPP_
 
-#include <cstdint>
 #include <functional>
 
 namespace libaction
@@ -51,12 +50,10 @@ public:
 	/// Construct from arguments.
 
 	/// @param[in]  part_index  Index of the body part.
-	/// @param[in]  x           X-coordinate (top-down, scaled by
-	///                         libaction::format::image_scale).
-	/// @param[in]  y           Y-coordinate (left-right, scaled by
-	///                         libaction::format::image_scale).
+	/// @param[in]  x           X-coordinate (top-down).
+	/// @param[in]  y           Y-coordinate (left-right).
 	/// @param[in]  score       Confidence of the estimation.
-	inline BodyPart(PartIndex part_index, int32_t x, int32_t y, float score)
+	inline BodyPart(PartIndex part_index, float x, float y, float score)
 	:
 	part_index_(part_index), x_(x), y_(y), score_(score)
 	{}
@@ -66,17 +63,15 @@ public:
 	/// @return                 Index of the body part.
 	inline PartIndex part_index() const { return part_index_; }
 
-	/// X-coordinate (top-down, scaled by libaction::format::image_scale).
+	/// X-coordinate (top-down, [0.0, 1.0)).
 
-	/// @return                 X-coordinate (top-down, scaled by
-	///                         libaction::format::image_scale).
-	inline int32_t x() const { return x_; }
+	/// @return                 X-coordinate (top-down, [0.0, 1.0)).
+	inline float x() const { return x_; }
 
-	/// Y-coordinate (left-right, scaled by libaction::format::image_scale).
+	/// Y-coordinate (left-right, [0.0, 1.0)).
 
-	/// @return                 Y-coordinate (left-right,
-	///                         scaled by libaction::format::image_scale).
-	inline int32_t y() const { return y_; }
+	/// @return                 Y-coordinate (left-right, [0.0, 1.0)).
+	inline float y() const { return y_; }
 
 	/// Confidence of the estimation.
 
@@ -85,8 +80,7 @@ public:
 
 private:
 	PartIndex part_index_{PartIndex::end};
-	int32_t x_{}, y_{};
-	float score_{};
+	float x_{}, y_{}, score_{};
 };
 
 }

@@ -9,14 +9,12 @@
 #define LIBACTION__STILL__SINGLE__ESTIMATOR_HPP_
 
 #include "../../body_part.hpp"
-#include "../../format.hpp"
 #include "../../human.hpp"
 #include "../../detail/image.hpp"
 #include "../detail/array.hpp"
 #include "detail/posenet_parts.hpp"
 
 #include <boost/multi_array.hpp>
-#include <boost/numeric/conversion/cast.hpp>
 #include <tensorflow/contrib/lite/kernels/register.h>
 #include <tensorflow/contrib/lite/model.h>
 #include <algorithm>
@@ -177,14 +175,8 @@ public:
 				parts.push_back(libaction::BodyPart(
 					detail::posenet_parts::to_libaction_part_index(
 						static_cast<detail::posenet_parts::Part>(i)),
-					boost::numeric_cast<uint32_t>(
-						(*points)[i].first *
-						static_cast<float>(height) *
-						static_cast<float>(libaction::format::image_scale)),
-					boost::numeric_cast<uint32_t>(
-						(*points)[i].second *
-						static_cast<float>(height) *
-						static_cast<float>(libaction::format::image_scale)),
+					(*points)[i].first,
+					(*points)[i].second,
 					(*scores)[i]
 				));
 			}
