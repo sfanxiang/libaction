@@ -9,7 +9,10 @@ project('libaction', 'cpp',
         default_options : ['cpp_std=c++11'],
         version : '1.0')
 
-deptensorflow = dependency('tensorflow-lite')
+cpp = meson.get_compiler('cpp')
+requires = [dependency('tensorflow-lite')]
+libraries = [dependency('threads'), cpp.find_library('boost_serialization')]
+dependencies = requires + libraries
 
 subdir('demo')
 subdir('include')
@@ -18,4 +21,6 @@ pkg = import('pkgconfig')
 pkg.generate(version : meson.project_version(),
              name : 'libaction',
              filebase : 'libaction',
-             description : 'Libaction')
+             description : 'Libaction',
+             requires : requires,
+             libraries : libraries)
