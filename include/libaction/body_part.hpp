@@ -8,6 +8,7 @@
 #ifndef LIBACTION__BODY_PART_HPP_
 #define LIBACTION__BODY_PART_HPP_
 
+#include <boost/serialization/nvp.hpp>
 #include <functional>
 
 namespace libaction
@@ -88,10 +89,19 @@ public:
 	{
 		static_cast<void>(version);
 
-		ar & static_cast<int>(part_index_);
-		ar & x_;
-		ar & y_;
-		ar & score_;
+		int pi = static_cast<int>(part_index_);
+		ar & boost::serialization::make_nvp("part_index", pi);
+		if (pi != static_cast<int>(part_index_)) {
+			if (pi >= 0 && pi < static_cast<int>(PartIndex::end))
+				part_index_ = static_cast<PartIndex>(pi);
+			else
+				part_index_ = PartIndex::nose;
+		}
+
+		ar & boost::serialization::make_nvp("x", x_);
+		ar & boost::serialization::make_nvp("y", y_);
+		ar & boost::serialization::make_nvp("score", score_);
+
 	}
 
 private:

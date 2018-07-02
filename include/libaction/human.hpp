@@ -10,6 +10,7 @@
 
 #include "body_part.hpp"
 
+#include <boost/serialization/nvp.hpp>
 #include <unordered_map>
 
 namespace libaction
@@ -61,7 +62,9 @@ public:
 	{
 		static_cast<void>(version);
 
-		ar & body_parts_;
+		// TODO: WRONG! What if malicious data has different part_index and
+		//       index in human map?
+		ar & boost::serialization::make_nvp("body_parts", body_parts_);
 	}
 
 private:
