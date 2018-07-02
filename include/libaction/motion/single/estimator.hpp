@@ -325,7 +325,7 @@ public:
 
 	/// Reset the status of Estimator.
 
-	///	This is necessary when the image stream is changed.
+	///	This is necessary when the stream is changed.
 	inline void reset()
 	{
 		unzoomed_still_poses.clear();
