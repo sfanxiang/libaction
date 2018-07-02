@@ -5,7 +5,11 @@
  * This Source Code Form is "Incompatible With Secondary Licenses", as
  * defined by the Mozilla Public License, v. 2.0. */
 
+#include <boost/archive/xml_oarchive.hpp>
 #include <boost/multi_array.hpp>
+#include <boost/serialization/list.hpp>
+#include <boost/serialization/unique_ptr.hpp>
+#include <boost/serialization/unordered_map.hpp>
 #include <libaction/human.hpp>
 #include <libaction/motion/single/estimator.hpp>
 #include <libaction/still/single/estimator.hpp>
@@ -14,6 +18,7 @@
 #include <fstream>
 #include <functional>
 #include <iostream>
+#include <list>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -52,11 +57,12 @@ static std::unique_ptr<const boost::multi_array<uint8_t, 3>> motion_callback(
 
 int main(int argc, char *argv[])
 {
-	if (argc != 12) {
+	if (argc != 13) {
 		std::cerr << "Usage: <raw image files prefix> <raw image files suffix> "
 			"<number of images> <image height> <image width> "
 			"<graph file> <graph height> <graph width> <zoom> "
-			"<concurrent estimations> <threads per estimation>"
+			"<concurrent estimations> <threads per estimation> "
+			"<save file>"
 			<< std::endl << std::endl
 			<< "For example, if <raw image files prefix> is \"image\", "
 			"<raw image files suffix> is \".raw\" and <number of images> is 3, "
@@ -85,6 +91,7 @@ int main(int argc, char *argv[])
 		const bool zoom = (std::stoul(argv[9]) != 0);
 		const size_t concurrent_estimations = std::stoul(argv[10]);
 		const size_t threads_per_estimation = std::stoul(argv[11]);
+		const std::string save_file = argv[12];
 
 		if (num_images == 0)
 			throw std::runtime_error("<number of images> is 0");
@@ -118,6 +125,9 @@ int main(int argc, char *argv[])
 			image_height, image_width, channels,
 			std::placeholders::_1));
 
+		std::list<std::unordered_map<size_t, libaction::Human>>
+		results;
+
 		auto time_before = std::chrono::steady_clock::now();
 
 		for (size_t i = 0; i < num_images; i++) {
@@ -127,7 +137,7 @@ int main(int argc, char *argv[])
 				zoom, zoom_range, zoom_rate,
 				still_estimator_ptrs, still_estimator_ptrs, callback);
 
-			// show results
+			// show result
 			std::cout << "======== Image #" << i << " ========" << std::endl;
 			for (auto &human: *humans) {
 				std::cout << "Human #" << human.first << std::endl;
@@ -139,13 +149,22 @@ int main(int argc, char *argv[])
 				}
 			}
 			std::cout << std::endl;
+
+			results.push_back(std::move(*humans));
 		}
 
 		auto time_after = std::chrono::steady_clock::now();
 
-		// show elapsed time
 		auto elapsed = std::chrono::duration_cast<
 			std::chrono::microseconds>(time_after - time_before).count();
+
+		if (!save_file.empty()) {
+			std::ofstream save(save_file, std::ios::out | std::ios::binary);
+			boost::archive::xml_oarchive oa(save);
+			oa << boost::serialization::make_nvp("action_motion", results);
+		}
+
+		// show elapsed time
 		std::cout << "Elapsed: " << elapsed << std::endl;
 		std::cout << "Average: "
 			<< static_cast<double>(elapsed) / static_cast<double>(num_images)
