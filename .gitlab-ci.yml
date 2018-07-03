@@ -17,16 +17,7 @@ build:
   - cd tensorflow && make -s -j $(nproc) -f tensorflow/contrib/lite/Makefile SHELL=bash && cd ..
   # install tensorflow-lite
   - mkdir -p /usr/local/include
-  - mkdir -p /usr/local/lib/pkgconfig
-  - echo 'prefix=/usr/local' > /usr/local/lib/pkgconfig/tensorflow-lite.pc
-  - echo 'libdir=${prefix}/lib' >> /usr/local/lib/pkgconfig/tensorflow-lite.pc
-  - echo 'includedir=${prefix}/include' >> /usr/local/lib/pkgconfig/tensorflow-lite.pc
-  - echo '' >> /usr/local/lib/pkgconfig/tensorflow-lite.pc
-  - "echo 'Name: tensorflow-lite' >> /usr/local/lib/pkgconfig/tensorflow-lite.pc"
-  - "echo 'Description: Tensorflow Lite' >> /usr/local/lib/pkgconfig/tensorflow-lite.pc"
-  - "echo 'Version: 1.0' >> /usr/local/lib/pkgconfig/tensorflow-lite.pc"
-  - "echo 'Cflags: -I${includedir}' >> /usr/local/lib/pkgconfig/tensorflow-lite.pc"
-  - "echo 'Libs: -ltensorflow-lite -ldl' >> /usr/local/lib/pkgconfig/tensorflow-lite.pc"
+  - mkdir -p /usr/local/lib
   - cp -R tensorflow/tensorflow /usr/local/include
   - cp -R tensorflow/tensorflow/contrib/lite/downloads/flatbuffers/include/* /usr/local/include/
   - cp $(find tensorflow/tensorflow/contrib/lite/gen/lib -name "libtensorflow-lite.a") /usr/local/lib
