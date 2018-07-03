@@ -10,8 +10,11 @@ project('libaction', 'cpp',
         version : '1.0')
 
 cpp = meson.get_compiler('cpp')
-requires = [dependency('tensorflow-lite')]
-libraries = [dependency('threads'), cpp.find_library('boost_serialization')]
+requires = []
+libraries = [cpp.find_library('tensorflow-lite'),
+             cpp.find_library('dl', required : false),
+             # libdl is required by TensorFlow Lite on some platforms
+             dependency('threads')]
 dependencies = requires + libraries
 
 subdir('demo')
