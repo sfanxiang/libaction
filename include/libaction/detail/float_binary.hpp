@@ -23,8 +23,6 @@ namespace float_binary
 
 std::vector<uint8_t> to_binary(float value)
 {
-	// no nan or inf allowed
-
 	bool sign = std::signbit(value);
 
 	if (std::isnan(value)) {
@@ -91,12 +89,13 @@ float to_float(const Bytes &bytes)
 	if (bytes.size() != 4)
 		throw std::runtime_error("bytes.size() != 4");
 
-	uint32_t num = (static_cast<uint32_t>(bytes[0]) << 24) |
-		(static_cast<uint32_t>(bytes[1]) << 16) |
-		(static_cast<uint32_t>(bytes[2]) << 8) |
-		static_cast<uint32_t>(bytes[3]);
+	uint32_t num =
+		(static_cast<uint32_t>(static_cast<uint8_t>(bytes[0])) << 24) |
+		(static_cast<uint32_t>(static_cast<uint8_t>(bytes[1])) << 16) |
+		(static_cast<uint32_t>(static_cast<uint8_t>(bytes[2])) << 8) |
+		static_cast<uint32_t>(static_cast<uint8_t>(bytes[3]));
 
-	bool sign = ((bytes[0] & 0x80U) != 0);
+	bool sign = ((num & 0x80000000U) != 0U);
 
 	if ((num & 0x7f800000U) == 0x7f800000U) {
 		if ((num & 0x7fffffU) != 0U) {
