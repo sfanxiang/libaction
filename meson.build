@@ -11,11 +11,12 @@ project('libaction', 'cpp',
 
 cpp = meson.get_compiler('cpp')
 requires = []
-libraries = [cpp.find_library('tensorflow-lite')]
-dependencies = requires + libraries + [
+libraries = [
+    cpp.find_library('tensorflow-lite'),
     # libdl is required by TensorFlow Lite on some platforms
     cpp.find_library('dl', required : false),
     dependency('threads')]
+dependencies = requires + libraries
 
 subdir('demo')
 subdir('include')
@@ -24,6 +25,4 @@ pkg = import('pkgconfig')
 pkg.generate(version : meson.project_version(),
              name : 'libaction',
              filebase : 'libaction',
-             description : 'Libaction',
-             requires : requires,
-             libraries : libraries)
+             description : 'Libaction')
