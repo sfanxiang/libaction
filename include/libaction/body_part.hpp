@@ -8,7 +8,6 @@
 #ifndef LIBACTION__BODY_PART_HPP_
 #define LIBACTION__BODY_PART_HPP_
 
-#include <boost/serialization/nvp.hpp>
 #include <functional>
 
 namespace libaction
@@ -78,31 +77,6 @@ public:
 
 	/// @return                 Confidence of the estimation.
 	inline float score() const { return score_; }
-
-	/// Serialize.
-
-	/// Conforms to Boost.Serialization.
-	/// @param[in]  ar          Serialization archive.
-	/// @param[in]  version     Archive version.
-	template<class Archive>
-	void serialize(Archive &ar, const unsigned int version)
-	{
-		static_cast<void>(version);
-
-		int pi = static_cast<int>(part_index_);
-		ar & boost::serialization::make_nvp("part_index", pi);
-		if (pi != static_cast<int>(part_index_)) {
-			if (pi >= 0 && pi < static_cast<int>(PartIndex::end))
-				part_index_ = static_cast<PartIndex>(pi);
-			else
-				part_index_ = PartIndex::nose;
-		}
-
-		ar & boost::serialization::make_nvp("x", x_);
-		ar & boost::serialization::make_nvp("y", y_);
-		ar & boost::serialization::make_nvp("score", score_);
-
-	}
 
 private:
 	PartIndex part_index_{PartIndex::end};

@@ -10,7 +10,6 @@
 
 #include "body_part.hpp"
 
-#include <boost/serialization/nvp.hpp>
 #include <unordered_map>
 
 namespace libaction
@@ -52,20 +51,6 @@ public:
 		return body_parts_;
 	}
 
-	/// Serialize.
-
-	/// Conforms to Boost.Serialization.
-	/// @param[in]  ar          Serialization archive.
-	/// @param[in]  version     Archive version.
-	template<class Archive>
-	void serialize(Archive &ar, const unsigned int version)
-	{
-		static_cast<void>(version);
-
-		// TODO: WRONG! What if malicious data has different part_index and
-		//       index in human map?
-		ar & boost::serialization::make_nvp("body_parts", body_parts_);
-	}
 
 private:
 	std::unordered_map<BodyPart::PartIndex, BodyPart> body_parts_{};
