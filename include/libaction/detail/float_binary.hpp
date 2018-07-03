@@ -69,8 +69,8 @@ std::vector<uint8_t> to_binary(float value)
 			0U, 0U
 		};
 	}
-	if (exp_int < 0) {
-		// zero
+	if (exp_int <= 0) {
+		// zero, or subnormal(ignored)
 		return { static_cast<uint8_t>(sign ? 0x80U : 0U), 0U, 0U, 0U };
 	}
 
@@ -111,6 +111,18 @@ float to_float(const Bytes &bytes)
 			return std::copysign(
 				HUGE_VALF,
 				(sign ? -1.0f : +1.0f));
+		}
+	} else if ((num & 0x7f800000U) == 0U) {
+		if ((num & 0x7fffffU) != 0U) {
+			// subnormal
+			int exp_int = 0 - 125 - 24;
+			float mant = static_cast<float>(num & 0x7fffffU);
+			return std::copysign(
+				std::ldexp(mant, exp_int),
+				(sign ? -1.0f : +1.0f));
+		} else {
+			// zero
+			return std::copysign(0.0f, (sign ? -1.0f : +1.0f));
 		}
 	} else {
 		uint8_t exp = (num & 0x7f800000U) >> 23;
