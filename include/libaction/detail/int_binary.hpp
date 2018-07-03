@@ -24,7 +24,7 @@ namespace int_binary
 {
 
 template<typename Integral>
-std::enable_if<
+typename std::enable_if<
 	std::is_integral<Integral>::value &&
 		!std::is_same<
 			typename std::remove_reference<
@@ -32,7 +32,8 @@ std::enable_if<
 			>::type,
 			bool
 		>::value,
-	std::vector<uint8_t>>
+	std::vector<uint8_t>
+>::type
 to_binary(Integral value)
 {
 	typename std::make_unsigned<typename std::remove_reference<
@@ -49,7 +50,7 @@ to_binary(Integral value)
 }
 
 template<typename Integral, typename Bytes>
-std::enable_if<
+typename std::enable_if<
 	std::is_integral<Integral>::value &&
 		!std::is_same<
 			typename std::remove_reference<
@@ -58,7 +59,9 @@ std::enable_if<
 			bool
 		>::value,
 	typename std::remove_reference<
-		typename std::remove_cv<Integral>::type>::type>
+		typename std::remove_cv<Integral>::type
+	>::type
+>::type
 to_int(const Bytes &bytes)
 {
 	typename std::make_unsigned<typename std::remove_reference<
