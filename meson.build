@@ -12,10 +12,10 @@ project('libaction', 'cpp',
 cpp = meson.get_compiler('cpp')
 requires = []
 libraries = [cpp.find_library('tensorflow-lite')]
-dependencies = requires + libraries +
-               [# libdl is required by TensorFlow Lite on some platforms
-                cpp.find_library('dl', required : false),
-                dependency('threads')]
+dependencies = requires + libraries + [
+    # libdl is required by TensorFlow Lite on some platforms
+    cpp.find_library('dl', required : false),
+    dependency('threads')]
 
 subdir('demo')
 subdir('include')
