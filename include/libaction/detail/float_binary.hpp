@@ -5,6 +5,9 @@
  * This Source Code Form is "Incompatible With Secondary Licenses", as
  * defined by the Mozilla Public License, v. 2.0. */
 
+#ifndef LIBACTION__DETAIL__FLOAT_BINARY_HPP_
+#define LIBACTION__DETAIL__FLOAT_BINARY_HPP_
+
 #include <cmath>
 #include <cstdint>
 #include <limits>
@@ -122,3 +125,5 @@ float to_float(const Bytes &bytes)
 }
 }
 }
+
+#endif
