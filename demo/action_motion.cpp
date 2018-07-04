@@ -7,6 +7,7 @@
 
 #include <boost/multi_array.hpp>
 #include <libaction/human.hpp>
+#include <libaction/motion/multi/serialize.hpp>
 #include <libaction/motion/single/estimator.hpp>
 #include <libaction/still/single/estimator.hpp>
 #include <chrono>
@@ -52,11 +53,11 @@ static std::unique_ptr<const boost::multi_array<uint8_t, 3>> motion_callback(
 
 int main(int argc, char *argv[])
 {
-	if (argc != 12) {
+	if (argc != 13) {
 		std::cerr << "Usage: <raw image files prefix> <raw image files suffix> "
 			"<number of images> <image height> <image width> "
 			"<graph file> <graph height> <graph width> <zoom> "
-			"<concurrent estimations> <threads per estimation>"
+			"<concurrent estimations> <threads per estimation> <save file>"
 			<< std::endl << std::endl
 			<< "For example, if <raw image files prefix> is \"image\", "
 			"<raw image files suffix> is \".raw\" and <number of images> is 3, "
@@ -85,6 +86,7 @@ int main(int argc, char *argv[])
 		const bool zoom = (std::stoul(argv[9]) != 0);
 		const size_t concurrent_estimations = std::stoul(argv[10]);
 		const size_t threads_per_estimation = std::stoul(argv[11]);
+		const std::string save_file = argv[12];
 
 		if (num_images == 0)
 			throw std::runtime_error("<number of images> is 0");
@@ -118,6 +120,8 @@ int main(int argc, char *argv[])
 			image_height, image_width, channels,
 			std::placeholders::_1));
 
+		std::list<std::unordered_map<std::size_t, libaction::Human>> action;
+
 		auto time_before = std::chrono::steady_clock::now();
 
 		for (size_t i = 0; i < num_images; i++) {
@@ -139,9 +143,17 @@ int main(int argc, char *argv[])
 				}
 			}
 			std::cout << std::endl;
+
+			action.push_back(std::move(*humans));
 		}
 
 		auto time_after = std::chrono::steady_clock::now();
+
+		if (!save_file.empty()) {
+			auto se = libaction::motion::multi::serialize::serialize(action);
+			std::basic_ofstream<uint8_t> ofs(save_file, std::ios::binary);
+			ofs.write(se->data(), se->size());
+		}
 
 		// show elapsed time
 		auto elapsed = std::chrono::duration_cast<
