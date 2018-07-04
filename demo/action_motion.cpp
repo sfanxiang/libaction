@@ -5,7 +5,9 @@
  * This Source Code Form is "Incompatible With Secondary Licenses", as
  * defined by the Mozilla Public License, v. 2.0. */
 
-/// @example action_motion.cpp
+/**
+ * @example action_motion.cpp
+ */
 
 #include <boost/multi_array.hpp>
 #include <libaction/human.hpp>
