@@ -5,6 +5,8 @@
  * This Source Code Form is "Incompatible With Secondary Licenses", as
  * defined by the Mozilla Public License, v. 2.0. */
 
+/// @example action_still.cpp
+
 #include <boost/multi_array.hpp>
 #include <libaction/human.hpp>
 #include <libaction/motion/multi/serialize.hpp>
@@ -19,8 +21,6 @@
 #include <string>
 #include <utility>
 #include <vector>
-
-/// @example action_still.cpp
 
 static std::unique_ptr<const boost::multi_array<uint8_t, 3>> read_image(
 	const std::string &file, size_t height, size_t width, size_t channels)
