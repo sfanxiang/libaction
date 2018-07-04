@@ -110,8 +110,8 @@ template<typename Action>
 inline std::unique_ptr<std::vector<uint8_t>>
 serialize(const Action &action, bool magic = true)
 {
-	std::unique_ptr<std::vector<uint8_t>> data =
-		std::unique_ptr<std::vector<uint8_t>>(new std::vector<uint8_t>());
+	auto data = std::unique_ptr<std::vector<uint8_t>>(
+		new std::vector<uint8_t>());
 
 	if (magic) {
 		data->push_back(static_cast<uint8_t>('A'));
