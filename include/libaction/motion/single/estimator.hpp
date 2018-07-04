@@ -574,7 +574,7 @@ private:
 
 	template<typename StillEstimator, typename ZoomStillEstimator,
 		typename ImagePtr>
-	void concurrent_preestimate(
+	void concurrent_preestimate_loop(
 		size_t length, bool zoom, size_t zoom_range, size_t zoom_rate,
 		StillEstimator &still_estimator,
 		ZoomStillEstimator &zoom_still_estimator,
@@ -613,6 +613,37 @@ private:
 			}
 
 			// status is false
+		}
+	}
+
+	template<typename StillEstimator, typename ZoomStillEstimator,
+		typename ImagePtr>
+	void concurrent_preestimate(
+		size_t length, bool zoom, size_t zoom_range, size_t zoom_rate,
+		StillEstimator &still_estimator,
+		ZoomStillEstimator &zoom_still_estimator,
+		const std::function<ImagePtr(size_t pos)> &callback,
+		std::list<std::pair<size_t, bool>> &queue,
+		std::list<std::pair<size_t, bool>> &extra_queue,
+		std::mutex &mutex,
+		std::condition_variable &cv,
+		bool &status, bool &end)
+	{
+		try {
+			concurrent_preestimate_loop(length, zoom, zoom_range, zoom_rate,
+				still_estimator, zoom_still_estimator,
+				callback, queue, extra_queue,
+				mutex, cv, status, end);
+		} catch (...) {
+			{
+				std::unique_lock<std::mutex> lock(mutex);
+
+				queue.clear();
+				extra_queue.clear();
+
+				status = true;
+			}
+			cv.notify_all();
 		}
 	}
 
