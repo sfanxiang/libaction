@@ -98,7 +98,7 @@ inline void write_human_map(const HumanMap &human_map,
 		if (index > max)
 			index = max;
 		write_int(index, output);
-		write_human(human_pair.second);
+		write_human(human_pair.second, output);
 	}
 }
 
