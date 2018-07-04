@@ -151,8 +151,9 @@ int main(int argc, char *argv[])
 
 		if (!save_file.empty()) {
 			auto se = libaction::motion::multi::serialize::serialize(action);
-			std::basic_ofstream<uint8_t> ofs(save_file, std::ios::binary);
-			ofs.write(se->data(), se->size());
+			std::ofstream ofs(save_file, std::ios::binary);
+			ofs.write(reinterpret_cast<char*>(se->data()), se->size());
+			ofs.close();
 		}
 
 		// show elapsed time
