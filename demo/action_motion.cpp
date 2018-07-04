@@ -37,11 +37,11 @@ static std::unique_ptr<const boost::multi_array<uint8_t, 3>> read_image(
 	auto image = std::unique_ptr<boost::multi_array<uint8_t, 3>>(
 		new boost::multi_array<uint8_t, 3>(
 			boost::extents[height][width][channels]));
-	auto size = std::fread(image->data(), image->num_elements(), 1, f);
+	auto count = std::fread(image->data(), image->num_elements(), 1, f);
 
 	std::fclose(f);
 
-	if (size < 1)
+	if (count < 1)
 		throw std::runtime_error("image file too small");
 
 	return image;
