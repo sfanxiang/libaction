@@ -5,8 +5,8 @@
  * This Source Code Form is "Incompatible With Secondary Licenses", as
  * defined by the Mozilla Public License, v. 2.0. */
 
-#ifndef LIBACTION__DETAIL__INT_BINARY_HPP_
-#define LIBACTION__DETAIL__INT_BINARY_HPP_
+#ifndef LIBACTION__DETAIL__INT_BYTES_HPP_
+#define LIBACTION__DETAIL__INT_BYTES_HPP_
 
 #include <algorithm>
 #include <cmath>
@@ -20,7 +20,7 @@ namespace libaction
 {
 namespace detail
 {
-namespace int_binary
+namespace int_bytes
 {
 
 template<typename Integral>
@@ -34,7 +34,7 @@ typename std::enable_if<
 		>::value,
 	std::vector<uint8_t>
 >::type
-to_binary(Integral value)
+to_bytes(Integral value)
 {
 	typename std::make_unsigned<typename std::remove_reference<
 		typename std::remove_cv<Integral>::type>::type>::type

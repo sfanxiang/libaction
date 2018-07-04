@@ -5,8 +5,8 @@
  * This Source Code Form is "Incompatible With Secondary Licenses", as
  * defined by the Mozilla Public License, v. 2.0. */
 
-#ifndef LIBACTION__DETAIL__FLOAT_BINARY_HPP_
-#define LIBACTION__DETAIL__FLOAT_BINARY_HPP_
+#ifndef LIBACTION__DETAIL__FLOAT_BYTES_HPP_
+#define LIBACTION__DETAIL__FLOAT_BYTES_HPP_
 
 #include <cmath>
 #include <cstdint>
@@ -18,10 +18,10 @@ namespace libaction
 {
 namespace detail
 {
-namespace float_binary
+namespace float_bytes
 {
 
-std::vector<uint8_t> to_binary(float value)
+std::vector<uint8_t> to_bytes(float value)
 {
 	bool sign = std::signbit(value);
 
