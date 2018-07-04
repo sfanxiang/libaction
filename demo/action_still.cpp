@@ -7,14 +7,18 @@
 
 #include <boost/multi_array.hpp>
 #include <libaction/human.hpp>
+#include <libaction/motion/multi/serialize.hpp>
 #include <libaction/still/single/estimator.hpp>
 #include <chrono>
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
+#include <list>
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <utility>
+#include <vector>
 
 /// @example action_still.cpp
 
@@ -38,9 +42,9 @@ static std::unique_ptr<const boost::multi_array<uint8_t, 3>> read_image(
 
 int main(int argc, char *argv[])
 {
-	if (argc != 8) {
+	if (argc != 9) {
 		std::cerr << "Usage: <raw image file> <image height> <image width> "
-			"<graph file> <graph height> <graph width> <threads>"
+			"<graph file> <graph height> <graph width> <threads> <save file>"
 			<< std::endl << std::endl
 			<< "If <threads> is 0, the number of threads for the estimation "
 			"will be automatically decided." << std::endl << std::endl;
@@ -57,6 +61,7 @@ int main(int argc, char *argv[])
 		const size_t graph_height = std::stoul(argv[5]);
 		const size_t graph_width = std::stoul(argv[6]);
 		const size_t threads = std::stoul(argv[7]);
+		const std::string save_file = argv[8];
 
 		// initialize the single pose estimator
 		libaction::still::single::Estimator<float> estimator(
@@ -80,6 +85,24 @@ int main(int argc, char *argv[])
 					<< part.second.y() * image_width << std::endl;
 			}
 			std::cout << std::endl;
+		}
+
+
+		if (!save_file.empty()) {
+			std::list<std::pair<std::size_t, libaction::Human>> human_map;
+			size_t i = 0;
+			for (auto &human: *humans) {
+				human_map.push_back(std::make_pair(i, std::move(human)));
+				i++;
+			}
+
+			auto se = libaction::motion::multi::serialize::serialize(
+				std::vector<std::list<std::pair<
+					std::size_t, libaction::Human>>>{ std::move(human_map) });
+
+			std::ofstream ofs(save_file, std::ios::binary);
+			ofs.write(reinterpret_cast<char*>(se->data()), se->size());
+			ofs.close();
 		}
 
 		// show elapsed time
