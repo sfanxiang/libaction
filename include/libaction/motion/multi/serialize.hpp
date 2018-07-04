@@ -48,8 +48,6 @@ inline void write_int(Integral value, std::vector<uint8_t> &output)
 inline void write_body_parts_bitmap(const libaction::Human &human,
 	std::vector<uint8_t> &output)
 {
-	auto &body_parts = human.body_parts();
-
 	static_assert(static_cast<int>(libaction::BodyPart::PartIndex::end) < 32,
 		"static_cast<int>(libaction::BodyPart::PartIndex::end) < 32");
 
@@ -106,6 +104,17 @@ inline void write_human_map(const HumanMap &human_map,
 
 }
 
+/// Serialize action data into bytes.
+
+/// @param[in]  action      Action data of the format
+///                         List<Map<Index, libaction::Human>>, where
+///                         `List` is an iterable of `Map`, `Map` is an
+///                         iterable of `std::pair<Index, libaction::Human>`,
+///                         and `Index` is an unsigned integral identifying
+///                         each person.
+/// @param[in]  magic       Whether the magic number should be included.
+/// @return                 Serialized bytes.
+/// @exception              std::runtime_error
 template<typename Action>
 inline std::unique_ptr<std::vector<uint8_t>>
 serialize(const Action &action, bool magic = true)

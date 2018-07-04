@@ -125,12 +125,21 @@ read_human_map(Iterator &it, Iterator end)
 
 }
 
+/// Deserialize action data from bytes.
+
+/// @param[in]  data        Action data in bytes.
+/// @param[in]  magic       Whether the magic number is included in `data`.
+/// @return                 Deserialized action data.
+/// @exception              std::runtime_error
 template<typename Data>
 inline std::unique_ptr<std::list<std::unordered_map<
 	std::size_t, libaction::Human>>>
-deserialize(const Data &data)
+deserialize(const Data &data, bool magic = true)
 {
 	typename Data::iterator it = data.begin();
+
+	if (magic)
+		read_int<uint32_t>(it, data.end());	// ignore 4 bytes
 
 	auto action_size = read_int<uint32_t>(it, data.end());
 	if (action_size >= max)
