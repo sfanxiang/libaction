@@ -15,27 +15,33 @@
 #include <libaction/motion/single/estimator.hpp>
 #include <libaction/still/single/estimator.hpp>
 #include <chrono>
+#include <cstdio>
 #include <cstdlib>
-#include <fstream>
 #include <functional>
 #include <iostream>
+#include <iterator>
+#include <list>
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <utility>
+#include <vector>
 
 static std::unique_ptr<const boost::multi_array<uint8_t, 3>> read_image(
 	const std::string &file, size_t height, size_t width, size_t channels)
 {
-	std::ifstream f(file, f.binary);
-	if (!f.is_open())
+	FILE *f = std::fopen(file.c_str(), "rb");
+	if (!f)
 		throw std::runtime_error("failed to open image file");
 
 	auto image = std::unique_ptr<boost::multi_array<uint8_t, 3>>(
 		new boost::multi_array<uint8_t, 3>(
 			boost::extents[height][width][channels]));
-	f.read(reinterpret_cast<char*>(image->data()), image->num_elements());
+	auto size = std::fread(image->data(), image->num_elements(), 1, f);
 
-	if (static_cast<size_t>(f.gcount()) < image->num_elements())
+	std::fclose(f);
+
+	if (size < 1)
 		throw std::runtime_error("image file too small");
 
 	return image;
@@ -153,9 +159,12 @@ int main(int argc, char *argv[])
 
 		if (!save_file.empty()) {
 			auto se = libaction::motion::multi::serialize::serialize(action);
-			std::ofstream ofs(save_file, std::ios::binary);
-			ofs.write(reinterpret_cast<char*>(se->data()), se->size());
-			ofs.close();
+
+			FILE *f = std::fopen(save_file.c_str(), "wb");
+			if (f) {
+				std::fwrite(se->data(), se->size(), 1, f);
+				std::fclose(f);
+			}
 		}
 
 		// show elapsed time
