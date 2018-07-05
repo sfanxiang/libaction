@@ -117,7 +117,7 @@ read_human_map(Iterator &it, Iterator end)
 
 		auto human = read_human(it, end);
 
-		human_map[index] = human;
+		human_map.insert(std::make_pair(index, std::move(human)));
 	}
 
 	return human_map;
@@ -136,7 +136,7 @@ inline std::unique_ptr<std::list<std::unordered_map<
 	std::size_t, libaction::Human>>>
 deserialize(const Data &data, bool magic = true)
 {
-	typename Data::iterator it = data.begin();
+	typename Data::const_iterator it = data.begin();
 
 	if (magic)
 		read_int<uint32_t>(it, data.end());	// ignore 4 bytes
