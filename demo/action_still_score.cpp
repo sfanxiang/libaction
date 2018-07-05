@@ -9,6 +9,9 @@
  * @example action_still_score.cpp
  */
 
+#include <libaction/motion/multi/deserialize.hpp>
+#include <libaction/still/single/score.hpp>
+
 int main(int argc, char *argv[])
 {
 

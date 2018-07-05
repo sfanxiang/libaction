@@ -14,10 +14,10 @@
 #include <libaction/motion/multi/serialize.hpp>
 #include <libaction/still/single/estimator.hpp>
 #include <chrono>
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <iostream>
-#include <iterator>
 #include <list>
 #include <memory>
 #include <stdexcept>
