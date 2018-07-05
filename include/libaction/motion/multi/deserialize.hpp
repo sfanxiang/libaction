@@ -13,6 +13,7 @@
 #include "../../detail/float_bytes.hpp"
 #include "../../detail/int_bytes.hpp"
 
+#include <cmath>
 #include <cstdint>
 #include <list>
 #include <memory>
@@ -93,6 +94,9 @@ read_human(Iterator &it, Iterator end)
 		float x = read_float(it, end);
 		float y = read_float(it, end);
 		float score = read_float(it, end);
+
+		if (std::isnan(x) || std::isnan(y) || std::isnan(score))
+			continue;
 
 		body_parts.push_back(libaction::BodyPart(
 			part_index, x, y, score));
