@@ -75,12 +75,18 @@ int main(int argc, char *argv[])
 				auto scores = libaction::still::single::score::score(
 					human1, human2);
 
+				uint32_t total = 0;
 				std::cout << "Human #" << index_human.first << ":" << std::endl;
 				for (auto &score: *scores) {
 					std::cout << static_cast<int>(score.first.first) << ", "
 						<< static_cast<int>(score.first.second) << ": "
 						<< static_cast<uint32_t>(score.second) * 100 / 128
 						<< std::endl;
+					total += static_cast<uint32_t>(score.second);
+				}
+				if (!scores->empty()) {
+					std::cout << "average: "
+						<< total * 100 / 128 / scores->size() << std::endl;
 				}
 				std::cout << std::endl;
 			}
