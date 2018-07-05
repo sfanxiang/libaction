@@ -13,6 +13,7 @@
 #include "../../detail/float_bytes.hpp"
 #include "../../detail/int_bytes.hpp"
 
+#include <cmath>
 #include <cstdint>
 #include <memory>
 #include <stdexcept>
