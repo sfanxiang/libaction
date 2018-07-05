@@ -82,21 +82,32 @@ inline float angle_diff(float x1, float y1, float x2, float y2)
 	return std::min(diff, 2 * (std::acos(-1.0f) /* pi */ ) - diff);
 }
 
-inline float angle_score(float x1, float y1, float x2, float y2)
+inline float angle_score(float x1, float y1, float x_range1, float y_range1,
+	float x2, float y2, float x_range2, float y_range2)
 {
-	return angle_diff(x1, y1, x2, y2) / (std::acos(-1.0f) /* pi */ );
+	if (x_range1 == 0.0f || y_range1 == 0.0f ||
+			x_range2 == 0.0f || y_range2 == 0.0f) {
+		return 0.0f;
+	}
+
+	return angle_diff(x1 * 4.0f / x_range1, y1 / y_range1,
+		x2 * 4.0f / x_range2, y2 / y_range2) / (std::acos(-1.0f) /* pi */ );
 }
 
 inline float angle_score(const libaction::BodyPart &connection1_from,
 	const libaction::BodyPart &connection1_to,
+	float x_range1, float y_range1,
 	const libaction::BodyPart &connection2_from,
-	const libaction::BodyPart &connection2_to)
+	const libaction::BodyPart &connection2_to,
+	float x_range2, float y_range2)
 {
 	return angle_score(
 		connection1_to.x() - connection1_from.x(),
 		connection1_to.y() - connection1_from.y(),
+		x_range1, y_range1,
 		connection2_to.x() - connection2_from.x(),
-		connection2_to.y() - connection2_from.y());
+		connection2_to.y() - connection2_from.y(),
+		x_range2, y_range2);
 }
 
 inline float distance(float x, float y)
@@ -108,11 +119,12 @@ inline float distance_score(float x1, float y1, float x_range1, float y_range1,
 	float x2, float y2, float x_range2, float y_range2)
 {
 	if (x_range1 == 0.0f || y_range1 == 0.0f ||
-			x_range2 == 0.0f || y_range2 == 0.0f)
+			x_range2 == 0.0f || y_range2 == 0.0f) {
 		return 0.0f;
+	}
 
-	auto d1 = distance(x1 / x_range1, y1 / y_range1);
-	auto d2 = distance(x2 / x_range2, y2 / y_range2);
+	auto d1 = distance(x1 * 4.0f / x_range1, y1 / y_range1);
+	auto d2 = distance(x2 * 4.0f / x_range2, y2 / y_range2);
 
 	auto diff = std::abs(d2 - d1);
 	auto sum = d1 + d2;
@@ -139,35 +151,22 @@ inline float distance_score(const libaction::BodyPart &connection1_from,
 		x_range2, y_range2);
 }
 
-inline float trimmed_range(std::vector<float> &data)
+inline float range(std::vector<float> &data)
 {
-	if (data.size() == 0)
-		throw std::runtime_error("data.size() == 0");
-	if (data.size() == 1)
+	if (data.size() < 2)
 		return 0.0f;
 
-	std::sort(data.begin(), data.end());
+	float max = *data.begin();
+	float min = *data.begin();
 
-	constexpr size_t div = 5;
-	static_assert(div > 1, "div > 1");
-
-	size_t begin = data.size() / div;
-	size_t end = data.size() * (div - 1) / div;
-	if (end <= begin)
-		end = begin + 1;
-
-	if (end == begin + 1 || data[end - 1] == data[begin]) {
-		begin = 1;
-		end = data.size() - 1;
-		if (end <= begin)
-			end = begin + 1;
-
-		if (end == begin + 1 || data[end - 1] == data[begin]) {
-			return data[data.size() - 1] - data[0];
-		}
+	for (float &value: data) {
+		if (!(value <= max))
+			max = value;
+		if (!(value >= min))
+			min = value;
 	}
 
-	return data[end - 1] - data[begin];
+	return max - min;
 }
 
 inline std::pair<float, float> sig_range(const libaction::Human &human)
@@ -175,14 +174,16 @@ inline std::pair<float, float> sig_range(const libaction::Human &human)
 	std::vector<float> x, y;
 	for (auto &part: human.body_parts()) {
 		x.push_back(part.second.x());
-		y.push_back(part.second.y());
+		if (part.first != libaction::BodyPart::PartIndex::wrist_r &&
+				part.first != libaction::BodyPart::PartIndex::wrist_l &&
+				part.first != libaction::BodyPart::PartIndex::elbow_r &&
+				part.first != libaction::BodyPart::PartIndex::elbow_l) {
+			y.push_back(part.second.y());
+		}
 	}
 
-	if (x.size() == 0)
-		throw std::runtime_error("x.size() == 0");
-
-	float x_range = trimmed_range(x);
-	float y_range = trimmed_range(y);
+	float x_range = range(x);
+	float y_range = range(y);
 
 	if (x_range == 0.0f)
 		x_range = y_range;
@@ -206,8 +207,6 @@ inline std::unique_ptr<std::map<std::pair<
 	uint8_t>>
 score(const libaction::Human &human1, const libaction::Human &human2)
 {
-	// TODO: Test this! (TEST THE RANGES FIRST ON SOME IMAGES.)
-
 	float x_range1, y_range1, x_range2, y_range2;
 	std::tie(x_range1, y_range1) = sig_range(human1);
 	std::tie(x_range2, y_range2) = sig_range(human2);
@@ -234,7 +233,9 @@ score(const libaction::Human &human1, const libaction::Human &human2)
 			continue;
 
 		auto a = angle_score(human1_from_it->second, human1_to_it->second,
-			human2_from_it->second, human2_to_it->second);
+			x_range1, y_range1,
+			human2_from_it->second, human2_to_it->second,
+			x_range2, y_range2);
 		auto d = distance_score(human1_from_it->second, human1_to_it->second,
 			x_range1, y_range1, human2_from_it->second, human2_to_it->second,
 			x_range2, y_range2);
