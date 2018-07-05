@@ -177,7 +177,11 @@ inline std::pair<float, float> sig_range(const libaction::Human &human)
 		if (part.first != libaction::BodyPart::PartIndex::wrist_r &&
 				part.first != libaction::BodyPart::PartIndex::wrist_l &&
 				part.first != libaction::BodyPart::PartIndex::elbow_r &&
-				part.first != libaction::BodyPart::PartIndex::elbow_l) {
+				part.first != libaction::BodyPart::PartIndex::elbow_l &&
+				part.first != libaction::BodyPart::PartIndex::ankle_r &&
+				part.first != libaction::BodyPart::PartIndex::ankle_l &&
+				part.first != libaction::BodyPart::PartIndex::knee_r &&
+				part.first != libaction::BodyPart::PartIndex::knee_l) {
 			y.push_back(part.second.y());
 		}
 	}
