@@ -9,12 +9,14 @@
  * @example action_still_score.cpp
  */
 
+#include <libaction/body_part.hpp>
 #include <libaction/motion/multi/deserialize.hpp>
 #include <libaction/still/single/score.hpp>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <iostream>
+#include <map>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -61,36 +63,70 @@ int main(int argc, char *argv[])
 		auto standard =
 			libaction::motion::multi::deserialize::deserialize(*standard_data);
 
-		if (sample->empty() || standard->empty()) {
-			throw std::runtime_error("data is empty");
+		if (sample->size() > standard->size()) {
+			throw std::runtime_error("sample size too large");
 		}
 
-		for (auto &index_human: *sample->begin()) {
-			auto human2_it = standard->begin()->find(index_human.first);
+		std::map<std::pair<libaction::BodyPart::PartIndex,
+			libaction::BodyPart::PartIndex>, uint64_t> part_sums;
+		std::map<std::pair<libaction::BodyPart::PartIndex,
+			libaction::BodyPart::PartIndex>, uint32_t> part_counts;
+		uint64_t frame_sum = 0;
+		uint32_t frame_count = 0;
 
-			if (human2_it != standard->begin()->end()) {
-				auto &human1 = index_human.second;
-				auto &human2 = human2_it->second;
+		auto sample_it = sample->begin();
+		auto standard_it = standard->begin();
 
-				auto scores = libaction::still::single::score::score(
-					human1, human2);
+		for (size_t i = 0; i < sample->size(); i++, sample_it++, standard_it++)
+		{
+			auto &sample_frame = *sample_it;
+			auto &standard_frame = *standard_it;
 
-				uint32_t total = 0;
-				std::cout << "Human #" << index_human.first << ":" << std::endl;
-				for (auto &score: *scores) {
-					std::cout << static_cast<int>(score.first.first) << ", "
-						<< static_cast<int>(score.first.second) << ": "
-						<< static_cast<uint32_t>(score.second) * 100 / 128
-						<< std::endl;
-					total += static_cast<uint32_t>(score.second);
-				}
-				if (!scores->empty()) {
-					std::cout << "average: "
-						<< total * 100 / 128 / scores->size() << std::endl;
-				}
-				std::cout << std::endl;
+			auto human1_it = sample_frame.find(0);
+			if (human1_it == sample_frame.end())
+				continue;
+
+			auto human2_it = standard_frame.find(0);
+			if (human2_it == standard_frame.end())
+				continue;
+
+			auto &human1 = human1_it->second;
+			auto &human2 = human2_it->second;
+
+			auto scores = libaction::still::single::score::score(
+				human1, human2);
+
+			uint32_t sum = 0;
+			std::cout << "======== Image #" << i << " ========" << std::endl;
+			for (auto &score: *scores) {
+				std::cout << static_cast<int>(score.first.first) << ", "
+					<< static_cast<int>(score.first.second) << ": "
+					<< static_cast<uint32_t>(score.second) * 100 / 128
+					<< std::endl;
+				sum += static_cast<uint32_t>(score.second);
+				part_sums[score.first] += score.second;
+				part_counts[score.first]++;
 			}
+			if (!scores->empty()) {
+				uint32_t average = sum * 100 / 128 / scores->size();
+				std::cout << "average: " << average << std::endl;
+				frame_sum += sum / scores->size();
+				frame_count++;
+			}
+			std::cout << std::endl;
 		}
+
+		std::cout << "Part average:" << std::endl;
+		for (auto &score: part_sums) {
+			uint64_t current = score.second / part_counts[score.first];
+			std::cout << static_cast<int>(score.first.first) << ", "
+				<< static_cast<int>(score.first.second) << ": "
+				<< current * 100 / 128
+				<< std::endl;
+		}
+		std::cout << "Frame average: " <<
+			(frame_count != 0 ? frame_sum * 100 / 128 / frame_count : 0)
+			<< std::endl;
 	} catch (std::exception &e) {
 		std::cerr << "Error: " << e.what() << std::endl;
 		return EXIT_FAILURE;
