@@ -36,7 +36,7 @@ namespace still
 namespace single
 {
 
-namespace
+namespace detail
 {
 class ErrorReporter: public tflite::ErrorReporter
 {
@@ -214,7 +214,7 @@ private:
 
 	size_t model_height, model_width, model_channels;
 
-	ErrorReporter error_reporter{};
+	detail::ErrorReporter error_reporter{};
 	std::unique_ptr<tflite::FlatBufferModel> model;
 	tflite::ops::builtin::BuiltinOpResolver resolver{};
 	std::unique_ptr<tflite::Interpreter> interpreter{};

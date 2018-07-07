@@ -30,7 +30,7 @@ namespace single
 namespace fuzz
 {
 
-namespace
+namespace detail
 {
 
 inline const std::vector<std::pair<
@@ -495,8 +495,8 @@ inline std::unique_ptr<libaction::Human> fuzz(
 		}
 	}
 
-	const auto &relative = relative_recipe();
-	const auto &absolute = absolute_recipe();
+	const auto &relative = detail::relative_recipe();
+	const auto &absolute = detail::absolute_recipe();
 
 	while (true) {
 		std::pair<
@@ -515,19 +515,20 @@ inline std::unique_ptr<libaction::Human> fuzz(
 		if (target) {
 			// relative recipe
 			for (auto &rule: relative) {
-				if (has_part(*target, rule.second) || !has_part(*target, rule.first))
+				if (detail::has_part(*target, rule.second) ||
+						!detail::has_part(*target, rule.first))
 					continue;
 
 				std::vector<libaction::BodyPart::PartIndex> search_for{
 					rule.first, rule.second };
-				auto search_result = search_for_parts(fuzz_range, search_for, callback);
+				auto search_result = detail::search_for_parts(fuzz_range, search_for, callback);
 				if (search_result.first == 0)	// not found
 					continue;
 
 				auto left = callback(search_result.first, true).second;
 				auto right = callback(search_result.second, false).second;
 
-				auto current_score = get_relative_fuzz_score(
+				auto current_score = detail::get_relative_fuzz_score(
 					search_result.first,
 					search_result.second,
 					*left,
@@ -550,17 +551,17 @@ inline std::unique_ptr<libaction::Human> fuzz(
 		if (!use_relative) {
 			// absolute recipe
 			for (auto &rule: absolute) {
-				if (target && has_part(*target, rule))
+				if (target && detail::has_part(*target, rule))
 					continue;
 
-				auto search_result = search_for_parts(fuzz_range, { rule }, callback);
+				auto search_result = detail::search_for_parts(fuzz_range, { rule }, callback);
 				if (search_result.first == 0)	// not found
 					continue;
 
 				auto left = callback(search_result.first, true).second;
 				auto right = callback(search_result.second, false).second;
 
-				auto current_score = get_absolute_fuzz_score(
+				auto current_score = detail::get_absolute_fuzz_score(
 					search_result.first,
 					search_result.second,
 					*left,
@@ -586,7 +587,7 @@ inline std::unique_ptr<libaction::Human> fuzz(
 			auto left = callback(pos.first, true).second;
 			auto right = callback(pos.second, false).second;
 
-			auto body_part = get_relative_fuzz_part(
+			auto body_part = detail::get_relative_fuzz_part(
 				pos.first,
 				pos.second,
 				*left,
@@ -605,7 +606,7 @@ inline std::unique_ptr<libaction::Human> fuzz(
 			auto left = callback(pos.first, true).second;
 			auto right = callback(pos.second, false).second;
 
-			auto body_part = get_absolute_fuzz_part(
+			auto body_part = detail::get_absolute_fuzz_part(
 				pos.first,
 				pos.second,
 				*left,

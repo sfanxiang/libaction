@@ -23,7 +23,7 @@ namespace single
 namespace anti_crossing
 {
 
-namespace
+namespace detail
 {
 
 template<typename T>
@@ -117,23 +117,23 @@ inline std::unique_ptr<libaction::Human> anti_crossing(
 					target_1 != target.body_parts().end()) {
 				if (side_0 != side->body_parts().end()) {
 					if (!left_cross &&
-							dist(target_0->second, side_0->second)
-							> dist(target_0->second, target_1->second)
+							detail::dist(target_0->second, side_0->second)
+							> detail::dist(target_0->second, target_1->second)
 								* 4.0f &&
-							hdist(target_0->second, side_0->second)
-							> hdist(target_0->second, target_1->second)
+							detail::hdist(target_0->second, side_0->second)
+							> detail::hdist(target_0->second, target_1->second)
 								* 8.0f) {
 						// left moved to right
 						left_cross = true;
 					}
 					if (!right_cross &&
-							dist(target_0->second, target_1->second) * 8.0f
+							detail::dist(target_0->second, target_1->second) * 8.0f
 								< size &&
-							dist(target_0->second, side_0->second) * 4.0f
+							detail::dist(target_0->second, side_0->second) * 4.0f
 								< size &&
-							hdist(target_0->second, target_1->second) * 16.0f
+							detail::hdist(target_0->second, target_1->second) * 16.0f
 								< size &&
-							hdist(target_0->second, side_0->second) * 8.0f
+							detail::hdist(target_0->second, side_0->second) * 8.0f
 								< size) {
 						// right moved to left
 						right_cross = true;
@@ -141,23 +141,23 @@ inline std::unique_ptr<libaction::Human> anti_crossing(
 				}
 				if (side_1 != side->body_parts().end()) {
 					if (!right_cross &&
-							dist(target_1->second, side_1->second)
-							> dist(target_1->second, target_0->second)
+							detail::dist(target_1->second, side_1->second)
+							> detail::dist(target_1->second, target_0->second)
 								* 4.0f &&
-							hdist(target_1->second, side_1->second)
-							> hdist(target_1->second, target_0->second)
+							detail::hdist(target_1->second, side_1->second)
+							> detail::hdist(target_1->second, target_0->second)
 								* 8.0f) {
 						// right moved to left
 						right_cross = true;
 					}
 					if (!left_cross &&
-							dist(target_0->second, target_1->second) * 8.0f
+							detail::dist(target_0->second, target_1->second) * 8.0f
 								< size &&
-							dist(target_1->second, side_1->second) * 4.0f
+							detail::dist(target_1->second, side_1->second) * 4.0f
 								< size &&
-							hdist(target_0->second, target_1->second) * 16.0f
+							detail::hdist(target_0->second, target_1->second) * 16.0f
 								< size &&
-							hdist(target_1->second, side_1->second) * 8.0f
+							detail::hdist(target_1->second, side_1->second) * 8.0f
 								< size) {
 						// left moved to right
 						left_cross = true;
@@ -166,14 +166,14 @@ inline std::unique_ptr<libaction::Human> anti_crossing(
 				if (side_0 != side->body_parts().end() &&
 						side_1 != side->body_parts().end()) {
 					if ((!left_cross || !right_cross) &&
-							dist(target_0->second, target_1->second)
-							> dist(target_0->second, side_1->second) * 3.0f &&
-							dist(target_0->second, target_1->second)
-							> dist(target_1->second, side_0->second) * 3.0f &&
-							hdist(target_0->second, target_1->second)
-							> hdist(target_0->second, side_1->second) * 6.0f &&
-							hdist(target_0->second, target_1->second)
-							> hdist(target_1->second, side_0->second) * 6.0f) {
+							detail::dist(target_0->second, target_1->second)
+							> detail::dist(target_0->second, side_1->second) * 3.0f &&
+							detail::dist(target_0->second, target_1->second)
+							> detail::dist(target_1->second, side_0->second) * 3.0f &&
+							detail::hdist(target_0->second, target_1->second)
+							> detail::hdist(target_0->second, side_1->second) * 6.0f &&
+							detail::hdist(target_0->second, target_1->second)
+							> detail::hdist(target_1->second, side_0->second) * 6.0f) {
 						// left-right exchanged
 						left_cross = right_cross = true;
 					}
@@ -182,11 +182,11 @@ inline std::unique_ptr<libaction::Human> anti_crossing(
 				if (side_0 != side->body_parts().end() &&
 						side_1 != side->body_parts().end()) {
 					if (!left_cross &&
-							dist(target_0->second, side_0->second)
-							> dist(target_0->second, side_1->second)
+							detail::dist(target_0->second, side_0->second)
+							> detail::dist(target_0->second, side_1->second)
 								* 3.2f &&
-							hdist(target_0->second, side_0->second)
-							> hdist(target_0->second, side_1->second)
+							detail::hdist(target_0->second, side_0->second)
+							> detail::hdist(target_0->second, side_1->second)
 								* 6.4f) {
 						// left moved to right
 						left_cross = true;
@@ -196,11 +196,11 @@ inline std::unique_ptr<libaction::Human> anti_crossing(
 				if (side_0 != side->body_parts().end() &&
 						side_1 != side->body_parts().end()) {
 					if (!right_cross &&
-							dist(target_1->second, side_1->second)
-							> dist(target_1->second, side_0->second)
+							detail::dist(target_1->second, side_1->second)
+							> detail::dist(target_1->second, side_0->second)
 								* 3.2f &&
-							hdist(target_1->second, side_1->second)
-							> hdist(target_1->second, side_0->second)
+							detail::hdist(target_1->second, side_1->second)
+							> detail::hdist(target_1->second, side_0->second)
 								* 6.4f) {
 						// right moved to left
 						right_cross = true;

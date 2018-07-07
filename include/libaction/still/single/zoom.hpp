@@ -27,7 +27,7 @@ namespace single
 namespace zoom
 {
 
-namespace
+namespace detail
 {
 
 // translate from cropped coordinates to the original image's
@@ -237,7 +237,7 @@ inline std::unique_ptr<libaction::Human> zoom_estimate(
 		auto find = new_human->body_parts().find(part.part_index());
 
 		if (find == new_human->body_parts().end()) {
-			auto coord = coord_translate(
+			auto coord = detail::coord_translate(
 				part.x(), part.y(),
 				image.shape()[0], image.shape()[1],
 				x1_i, y1_i,
@@ -249,7 +249,7 @@ inline std::unique_ptr<libaction::Human> zoom_estimate(
 				part.score()
 			);
 		} else if (find->second.score() <= part.score()) {
-			auto coord = coord_translate(
+			auto coord = detail::coord_translate(
 				part.x(), part.y(),
 				image.shape()[0], image.shape()[1],
 				x1_i, y1_i,

@@ -30,7 +30,7 @@ namespace multi
 namespace deserialize
 {
 
-namespace
+namespace detail
 {
 
 constexpr size_t max = 0x20000000;
@@ -52,14 +52,14 @@ template<typename Iterator>
 inline float read_float(Iterator &it, Iterator end)
 {
 	auto v = read_vector(it, end, 4);
-	return detail::float_bytes::to_float(v);
+	return libaction::detail::float_bytes::to_float(v);
 }
 
 template<typename Integral, typename Iterator>
 inline Integral read_int(Iterator &it, Iterator end)
 {
 	auto v = read_vector(it, end, sizeof(Integral));
-	return detail::int_bytes::to_int<Integral>(v);
+	return libaction::detail::int_bytes::to_int<Integral>(v);
 }
 
 template<typename Iterator>
@@ -143,10 +143,10 @@ deserialize(const Data &data, bool magic = true)
 	typename Data::const_iterator it = data.begin();
 
 	if (magic)
-		read_int<uint32_t>(it, data.end());	// ignore 4 bytes
+		detail::read_int<uint32_t>(it, data.end());	// ignore 4 bytes
 
-	auto action_size = read_int<uint32_t>(it, data.end());
-	if (action_size >= max)
+	auto action_size = detail::read_int<uint32_t>(it, data.end());
+	if (action_size >= detail::max)
 		throw std::runtime_error("too many items");
 
 	auto action = std::unique_ptr<std::list<std::unordered_map<
@@ -154,7 +154,7 @@ deserialize(const Data &data, bool magic = true)
 			new std::list<std::unordered_map<std::size_t, libaction::Human>>());
 
 	for (uint32_t i = 0; i < action_size; i++) {
-		action->push_back(read_human_map(it, data.end()));
+		action->push_back(detail::read_human_map(it, data.end()));
 	}
 
 	return action;

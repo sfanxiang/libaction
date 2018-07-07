@@ -28,7 +28,7 @@ namespace single
 namespace score
 {
 
-namespace
+namespace detail
 {
 
 inline std::vector<std::pair<
@@ -212,8 +212,8 @@ inline std::unique_ptr<std::map<std::pair<
 score(const libaction::Human &human1, const libaction::Human &human2)
 {
 	float x_range1, y_range1, x_range2, y_range2;
-	std::tie(x_range1, y_range1) = sig_range(human1);
-	std::tie(x_range2, y_range2) = sig_range(human2);
+	std::tie(x_range1, y_range1) = detail::sig_range(human1);
+	std::tie(x_range2, y_range2) = detail::sig_range(human2);
 
 	auto scores = std::unique_ptr<std::map<std::pair<
 		libaction::BodyPart::PartIndex, libaction::BodyPart::PartIndex>,
@@ -222,7 +222,7 @@ score(const libaction::Human &human1, const libaction::Human &human2)
 			libaction::BodyPart::PartIndex, libaction::BodyPart::PartIndex>,
 		uint8_t>());
 
-	for (auto &connection: score_connections()) {
+	for (auto &connection: detail::score_connections()) {
 		auto human1_from_it = human1.body_parts().find(connection.first);
 		if (human1_from_it == human1.body_parts().end())
 			continue;
@@ -236,11 +236,13 @@ score(const libaction::Human &human1, const libaction::Human &human2)
 		if (human2_to_it == human2.body_parts().end())
 			continue;
 
-		auto a = angle_score(human1_from_it->second, human1_to_it->second,
+		auto a = detail::angle_score(
+			human1_from_it->second, human1_to_it->second,
 			x_range1, y_range1,
 			human2_from_it->second, human2_to_it->second,
 			x_range2, y_range2);
-		auto d = distance_score(human1_from_it->second, human1_to_it->second,
+		auto d = detail::distance_score(
+			human1_from_it->second, human1_to_it->second,
 			x_range1, y_range1, human2_from_it->second, human2_to_it->second,
 			x_range2, y_range2);
 

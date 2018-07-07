@@ -28,21 +28,21 @@ namespace multi
 namespace serialize
 {
 
-namespace
+namespace detail
 {
 
 constexpr size_t max = 0x20000000;
 
 inline void write_float(float value, std::vector<uint8_t> &output)
 {
-	auto bytes = detail::float_bytes::to_bytes(value);
+	auto bytes = libaction::detail::float_bytes::to_bytes(value);
 	output.insert(output.end(), bytes.begin(), bytes.end());
 }
 
 template<typename Integral>
 inline void write_int(Integral value, std::vector<uint8_t> &output)
 {
-	auto bytes = detail::int_bytes::to_bytes(value);
+	auto bytes = libaction::detail::int_bytes::to_bytes(value);
 	output.insert(output.end(), bytes.begin(), bytes.end());
 }
 
@@ -130,13 +130,13 @@ serialize(const Action &action, bool magic = true)
 		data->push_back(0);
 	}
 
-	if (action.size() >= max)
+	if (action.size() >= detail::max)
 		throw std::runtime_error("too many items");
 
-	write_int(static_cast<uint32_t>(action.size()), *data);
+	detail::write_int(static_cast<uint32_t>(action.size()), *data);
 
 	for (auto &human_map: action) {
-		write_human_map(human_map, *data);
+		detail::write_human_map(human_map, *data);
 	}
 
 	return data;
