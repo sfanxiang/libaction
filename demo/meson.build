@@ -10,12 +10,12 @@ executable('action-motion',
            include_directories : include_directories('../include'),
            dependencies : dependencies)
 
-executable('action-still',
-           sources : ['action_still.cpp'],
+executable('action-score',
+           sources : ['action_score.cpp'],
            include_directories : include_directories('../include'),
            dependencies : dependencies)
 
-executable('action-still-score',
-           sources : ['action_still_score.cpp'],
+executable('action-still',
+           sources : ['action_still.cpp'],
            include_directories : include_directories('../include'),
            dependencies : dependencies)
