@@ -6,7 +6,7 @@
  * defined by the Mozilla Public License, v. 2.0. */
 
 /**
- * @example action_still_score.cpp
+ * @example action_score.cpp
  */
 
 #include <libaction/body_part.hpp>
