@@ -10,8 +10,8 @@ build:
   script:
   # fetch stuff
   - apt-get update -qq && apt-get install -y -qq doxygen graphviz libboost-all-dev meson unzip
-  - git clone https://github.com/tensorflow/tensorflow
-  - cd tensorflow && git checkout r1.9 && cd ..
+  # download the latest release of TensorFlow
+  - curl -s -L $(curl -s -L https://api.github.com/repos/tensorflow/tensorflow/releases/latest | python -c "import sys, json; print(json.load(sys.stdin)['tarball_url'])") | tar -z -x && mv tensorflow* tensorflow
   # build tensorflow-lite
   - cd tensorflow && tensorflow/contrib/lite/download_dependencies.sh && cd ..
   - cd tensorflow && make -s -j $(nproc) -f tensorflow/contrib/lite/Makefile SHELL=bash && cd ..
