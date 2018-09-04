@@ -32,7 +32,11 @@ static std::unique_ptr<std::vector<uint8_t>> read_file(
 		new std::vector<uint8_t>());
 
 	int c;
-	while (data->size() < max && (c = fgetc(f)) != EOF) {
+	while (data->size() < max && (c = std::fgetc(f)) != EOF) {
+		if (std::ferror(f)) {
+			std::fclose(f);
+			throw std::runtime_error("failed to read file");
+		}
 		data->push_back(static_cast<uint8_t>(c));
 	}
 
