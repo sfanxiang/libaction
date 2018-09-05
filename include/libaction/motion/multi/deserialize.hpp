@@ -28,7 +28,7 @@ namespace deserialize
 
 /// Deserialize action data from bytes.
 
-/// @param[in]  data        Action data in bytes.
+/// @param[in]  data        Action data in bytes in a standard container.
 /// @param[in]  magic       Whether the magic number is included in `data`.
 /// @return                 Deserialized action data.
 /// @exception              std::runtime_error
