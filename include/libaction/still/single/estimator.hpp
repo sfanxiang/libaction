@@ -12,6 +12,7 @@
 #include "../../human.hpp"
 #include "../../detail/image.hpp"
 #include "../detail/array.hpp"
+#include "detail/error_reporter.hpp"
 #include "detail/posenet_parts.hpp"
 
 #include <boost/multi_array.hpp>
@@ -35,18 +36,6 @@ namespace still
 {
 namespace single
 {
-
-namespace detail
-{
-class ErrorReporter: public tflite::ErrorReporter
-{
-	inline int Report(const char *, va_list)
-	{
-		// ignored
-		return 0;
-	}
-};
-}
 
 /// Single-person pose estimator.
 
