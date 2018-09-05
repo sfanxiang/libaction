@@ -10,6 +10,7 @@
 
 #include "../../body_part.hpp"
 #include "../../human.hpp"
+#include "anti_crossing/detail.hpp"
 
 #include <cmath>
 #include <memory>
@@ -22,35 +23,6 @@ namespace single
 {
 namespace anti_crossing
 {
-
-namespace detail
-{
-
-template<typename T>
-inline T hypot(T x, T y)
-{
-	return std::sqrt(x * x + y * y);
-}
-
-template<typename T>
-inline T dist(T x1, T y1, T x2, T y2)
-{
-	return hypot(x1 - x2, y1 - y2);
-}
-
-inline auto dist(const libaction::BodyPart &x, const libaction::BodyPart &y)
-	-> decltype(dist(x.x(), x.y(), y.x(), y.y()))
-{
-	return dist(x.x(), x.y(), y.x(), y.y());
-}
-
-inline auto hdist(const libaction::BodyPart &x, const libaction::BodyPart &y)
-	-> decltype(x.y())
-{
-	return std::abs(x.y() - y.y());
-}
-
-}
 
 /// Process an estimation of a single person to reduce crossing results.
 

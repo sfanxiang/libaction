@@ -9,7 +9,7 @@ INPUT                  = include demo README.md
 FILE_PATTERNS          = *.cpp *.hpp *.md
 RECURSIVE              = YES
 STRIP_FROM_INC_PATH    = include
-EXCLUDE_PATTERNS       = */detail/*
+EXCLUDE_PATTERNS       = */detail/* */detail.hpp
 EXTRACT_ALL            = YES
 USE_MDFILE_AS_MAINPAGE = README.md
 
