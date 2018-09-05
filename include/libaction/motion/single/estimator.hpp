@@ -86,7 +86,7 @@ public:
 	///                         different threads, sometimes with the same
 	///                         argument, if `still_estimators` has more than
 	///                         one element.
-	/// @return                 A map of humans from their index numbers.
+	/// @return                 A map of indexed humans. Index starts from 0.
 	/// @exception              std::runtime_error
 	/// @sa                     anti_crossing, fuzz, still::single::Estimator
 	///                         and still::single::zoom

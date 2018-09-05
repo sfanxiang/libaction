@@ -30,7 +30,8 @@ namespace deserialize
 
 /// @param[in]  data        Action data in bytes in a standard container.
 /// @param[in]  magic       Whether the magic number is included in `data`.
-/// @return                 Deserialized action data.
+/// @return                 Deserialized action data as a frame list of indexed
+///                         humans. Index starts from 0.
 /// @exception              std::runtime_error
 template<typename Data>
 inline std::unique_ptr<std::list<std::unordered_map<
