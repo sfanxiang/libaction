@@ -68,10 +68,10 @@ int main(int argc, char *argv[])
 			libaction::motion::multi::deserialize::deserialize(*standard_data);
 
 		std::map<std::pair<libaction::BodyPart::PartIndex,
-			libaction::BodyPart::PartIndex>, uint64_t> part_sums;
+			libaction::BodyPart::PartIndex>, std::uint64_t> part_sums;
 		std::map<std::pair<libaction::BodyPart::PartIndex,
 			libaction::BodyPart::PartIndex>, std::uint32_t> part_counts;
-		uint64_t frame_sum = 0;
+		std::uint64_t frame_sum = 0;
 		std::uint32_t frame_count = 0;
 
 		auto sample_it = sample->begin();
@@ -119,7 +119,7 @@ int main(int argc, char *argv[])
 
 		std::cout << "Part average:" << std::endl;
 		for (auto &score: part_sums) {
-			uint64_t current = score.second / part_counts[score.first];
+			std::uint64_t current = score.second / part_counts[score.first];
 			std::cout << static_cast<int>(score.first.first) << ", "
 				<< static_cast<int>(score.first.second) << ": "
 				<< current * 100 / 128
