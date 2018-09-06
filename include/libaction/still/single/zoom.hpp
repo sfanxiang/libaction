@@ -39,16 +39,16 @@ namespace zoom
 ///                         frame number.
 /// @return                 The left and the right bound, inclusively.
 /// @exception              std::runtime_error
-inline std::pair<size_t, size_t>
-get_zoom_lr(size_t pos, size_t length, size_t zoom_range)
+inline std::pair<std::size_t, std::size_t>
+get_zoom_lr(std::size_t pos, std::size_t length, std::size_t zoom_range)
 {
 	if (length == 0)
 		throw std::runtime_error("length == 0");
 	if (length <= pos)
 		throw std::runtime_error("length <= pos");
 
-	size_t l = (pos >= zoom_range ? pos - zoom_range : 0);
-	size_t r = (length - pos > zoom_range ? pos + zoom_range : length - 1);
+	std::size_t l = (pos >= zoom_range ? pos - zoom_range : 0);
+	std::size_t r = (length - pos > zoom_range ? pos + zoom_range : length - 1);
 
 	return std::make_pair(l, r);
 }
@@ -144,10 +144,10 @@ inline std::unique_ptr<libaction::Human> zoom_estimate(
 	y1 = std::max(y1, +0.0f);
 	y2 = std::min(y2, 1.0f);
 
-	size_t x1_i = static_cast<size_t>(x1 * static_cast<float>(image.shape()[0]));
-	size_t x2_i = static_cast<size_t>(x2 * static_cast<float>(image.shape()[0]));
-	size_t y1_i = static_cast<size_t>(y1 * static_cast<float>(image.shape()[1]));
-	size_t y2_i = static_cast<size_t>(y2 * static_cast<float>(image.shape()[1]));
+	std::size_t x1_i = static_cast<std::size_t>(x1 * static_cast<float>(image.shape()[0]));
+	std::size_t x2_i = static_cast<std::size_t>(x2 * static_cast<float>(image.shape()[0]));
+	std::size_t y1_i = static_cast<std::size_t>(y1 * static_cast<float>(image.shape()[1]));
+	std::size_t y2_i = static_cast<std::size_t>(y2 * static_cast<float>(image.shape()[1]));
 
 	x1_i = std::min(x1_i, image.shape()[0] - 1);
 	x2_i = std::max(std::min(x2_i, image.shape()[0] - 1), x1_i);
@@ -155,7 +155,7 @@ inline std::unique_ptr<libaction::Human> zoom_estimate(
 	y2_i = std::max(std::min(y2_i, image.shape()[1] - 1), y1_i);
 
 	if (x1_i == x2_i) {
-		size_t change = image.shape()[0] / 3;
+		std::size_t change = image.shape()[0] / 3;
 		if (x1_i >= change)
 			x1_i -= change;
 		else
@@ -163,7 +163,7 @@ inline std::unique_ptr<libaction::Human> zoom_estimate(
 		x2_i += change;
 	}
 	if (y1_i == y2_i) {
-		size_t change = image.shape()[1] / 3;
+		std::size_t change = image.shape()[1] / 3;
 		if (y1_i >= change)
 			y1_i -= change;
 		else

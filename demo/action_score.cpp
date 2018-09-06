@@ -22,7 +22,7 @@
 #include <utility>
 
 static std::unique_ptr<std::vector<uint8_t>> read_file(
-	const std::string &file, size_t max)
+	const std::string &file, std::size_t max)
 {
 	FILE *f = std::fopen(file.c_str(), "rb");
 	if (!f)
@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
 		auto sample_it = sample->begin();
 		auto standard_it = standard->begin();
 
-		for (size_t i = 0; i < sample->size() && i < standard->size();
+		for (std::size_t i = 0; i < sample->size() && i < standard->size();
 			i++, sample_it++, standard_it++)
 		{
 			auto &sample_frame = *sample_it;

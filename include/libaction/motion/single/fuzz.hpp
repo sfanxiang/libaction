@@ -42,16 +42,16 @@ namespace fuzz
 ///                         frame number.
 /// @return                 The left and the right bound, inclusively.
 /// @exception              std::runtime_error
-inline std::pair<size_t, size_t>
-get_fuzz_lr(size_t pos, size_t length, size_t fuzz_range)
+inline std::pair<std::size_t, std::size_t>
+get_fuzz_lr(std::size_t pos, std::size_t length, std::size_t fuzz_range)
 {
 	if (length == 0)
 		throw std::runtime_error("length == 0");
 	if (length <= pos)
 		throw std::runtime_error("length <= pos");
 
-	size_t l = pos;
-	size_t r = pos;
+	std::size_t l = pos;
+	std::size_t r = pos;
 
 	if (fuzz_range != 0) {
 		if (pos >= fuzz_range - 1)
@@ -95,8 +95,8 @@ get_fuzz_lr(size_t pos, size_t length, size_t fuzz_range)
 /// @exception              std::runtime_error
 template<typename HumanPtr>
 inline std::unique_ptr<libaction::Human> fuzz(
-	size_t fuzz_range,
-	const std::function<std::pair<bool, HumanPtr>(size_t relative_pos, bool left)>
+	std::size_t fuzz_range,
+	const std::function<std::pair<bool, HumanPtr>(std::size_t relative_pos, bool left)>
 		&callback)
 {
 	std::unique_ptr<libaction::Human> target;
@@ -120,12 +120,12 @@ inline std::unique_ptr<libaction::Human> fuzz(
 
 	while (true) {
 		std::pair<
-			std::pair<size_t, size_t>,
+			std::pair<std::size_t, std::size_t>,
 			std::pair<
 				libaction::BodyPart::PartIndex, libaction::BodyPart::PartIndex>
 		> relative_candidate;
 		std::pair<
-			std::pair<size_t, size_t>,
+			std::pair<std::size_t, std::size_t>,
 			libaction::BodyPart::PartIndex
 		> absolute_candidate;
 

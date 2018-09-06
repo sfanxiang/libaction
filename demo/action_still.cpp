@@ -26,7 +26,7 @@
 #include <vector>
 
 static std::unique_ptr<const boost::multi_array<uint8_t, 3>> read_image(
-	const std::string &file, size_t height, size_t width, size_t channels)
+	const std::string &file, std::size_t height, std::size_t width, std::size_t channels)
 {
 	FILE *f = std::fopen(file.c_str(), "rb");
 	if (!f)
@@ -57,15 +57,15 @@ int main(int argc, char *argv[])
 	}
 
 	try {
-		const size_t channels = 3;
+		const std::size_t channels = 3;
 
 		const std::string image_file = argv[1];
-		const size_t image_height = std::stoul(argv[2]);
-		const size_t image_width = std::stoul(argv[3]);
+		const std::size_t image_height = std::stoul(argv[2]);
+		const std::size_t image_width = std::stoul(argv[3]);
 		const std::string graph_file = argv[4];
-		const size_t graph_height = std::stoul(argv[5]);
-		const size_t graph_width = std::stoul(argv[6]);
-		const size_t threads = std::stoul(argv[7]);
+		const std::size_t graph_height = std::stoul(argv[5]);
+		const std::size_t graph_width = std::stoul(argv[6]);
+		const std::size_t threads = std::stoul(argv[7]);
 		const std::string save_file = argv[8];
 
 		// initialize the single pose estimator
@@ -95,7 +95,7 @@ int main(int argc, char *argv[])
 
 		if (!save_file.empty()) {
 			std::list<std::pair<std::size_t, libaction::Human>> human_map;
-			size_t i = 0;
+			std::size_t i = 0;
 			for (auto &human: *humans) {
 				human_map.push_back(std::make_pair(i, std::move(human)));
 				i++;

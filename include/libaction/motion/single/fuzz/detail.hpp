@@ -202,10 +202,10 @@ inline bool has_parts(const libaction::Human &human,
 }
 
 template<typename HumanPtr>
-inline std::pair<size_t, size_t> search_for_parts(
-	size_t fuzz_range,
+inline std::pair<std::size_t, std::size_t> search_for_parts(
+	std::size_t fuzz_range,
 	const std::vector<libaction::BodyPart::PartIndex> &parts,
-	const std::function<std::pair<bool, HumanPtr>(size_t relative_pos, bool left)>
+	const std::function<std::pair<bool, HumanPtr>(std::size_t relative_pos, bool left)>
 		&callback)
 {
 	if (fuzz_range < 2) {
@@ -215,7 +215,7 @@ inline std::pair<size_t, size_t> search_for_parts(
 
 	// try to find the first pose that contains parts on the left
 	bool found = false;
-	size_t loff = 1;
+	std::size_t loff = 1;
 	for (; loff < fuzz_range; loff += 1)
 	{
 		bool valid;
@@ -236,7 +236,7 @@ inline std::pair<size_t, size_t> search_for_parts(
 
 	// try to find the first pose that contains parts on the right
 	found = false;
-	size_t roff = 1;
+	std::size_t roff = 1;
 	for(; roff <= fuzz_range - loff; roff += 1)
 	{
 		bool valid;
@@ -259,8 +259,8 @@ inline std::pair<size_t, size_t> search_for_parts(
 }
 
 inline float get_relative_fuzz_score(
-	size_t left_offset,
-	size_t right_offset,
+	std::size_t left_offset,
+	std::size_t right_offset,
 	const libaction::Human &left,
 	const libaction::Human &right,
 	const libaction::Human &target,
@@ -291,8 +291,8 @@ inline float get_relative_fuzz_score(
 }
 
 inline float get_absolute_fuzz_score(
-	size_t left_offset,
-	size_t right_offset,
+	std::size_t left_offset,
+	std::size_t right_offset,
 	const libaction::Human &left,
 	const libaction::Human &right,
 	libaction::BodyPart::PartIndex target_part_index,
@@ -316,8 +316,8 @@ inline float get_absolute_fuzz_score(
 }
 
 inline libaction::BodyPart get_relative_fuzz_part(
-	size_t left_offset,
-	size_t right_offset,
+	std::size_t left_offset,
+	std::size_t right_offset,
 	const libaction::Human &left,
 	const libaction::Human &right,
 	const libaction::Human &target,
@@ -388,8 +388,8 @@ inline libaction::BodyPart get_relative_fuzz_part(
 }
 
 inline libaction::BodyPart get_absolute_fuzz_part(
-	size_t left_offset,
-	size_t right_offset,
+	std::size_t left_offset,
+	std::size_t right_offset,
 	const libaction::Human &left,
 	const libaction::Human &right,
 	libaction::BodyPart::PartIndex target_part_index,

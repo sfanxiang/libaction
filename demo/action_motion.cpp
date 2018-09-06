@@ -28,7 +28,7 @@
 #include <vector>
 
 static std::unique_ptr<const boost::multi_array<uint8_t, 3>> read_image(
-	const std::string &file, size_t height, size_t width, size_t channels)
+	const std::string &file, std::size_t height, std::size_t width, std::size_t channels)
 {
 	FILE *f = std::fopen(file.c_str(), "rb");
 	if (!f)
@@ -50,8 +50,8 @@ static std::unique_ptr<const boost::multi_array<uint8_t, 3>> read_image(
 static std::unique_ptr<const boost::multi_array<uint8_t, 3>> motion_callback(
 	const std::string &image_file_prefix,
 	const std::string &image_file_suffix,
-	size_t image_height, size_t image_width, size_t channels,
-	size_t pos, bool /* last_image_access */
+	std::size_t image_height, std::size_t image_width, std::size_t channels,
+	std::size_t pos, bool /* last_image_access */
 ) {
 	// read the image
 	auto image = read_image(
@@ -79,22 +79,22 @@ int main(int argc, char *argv[])
 	}
 
 	try {
-		const size_t channels = 3;
-		const size_t fuzz_range = 7;
-		const size_t zoom_range = 3;
-		const size_t zoom_rate = 1;
+		const std::size_t channels = 3;
+		const std::size_t fuzz_range = 7;
+		const std::size_t zoom_range = 3;
+		const std::size_t zoom_rate = 1;
 
 		const std::string image_file_prefix = argv[1];
 		const std::string image_file_suffix = argv[2];
 		const unsigned long num_images = std::stoul(argv[3]);
-		const size_t image_height = std::stoul(argv[4]);
-		const size_t image_width = std::stoul(argv[5]);
+		const std::size_t image_height = std::stoul(argv[4]);
+		const std::size_t image_width = std::stoul(argv[5]);
 		const std::string graph_file = argv[6];
-		const size_t graph_height = std::stoul(argv[7]);
-		const size_t graph_width = std::stoul(argv[8]);
+		const std::size_t graph_height = std::stoul(argv[7]);
+		const std::size_t graph_width = std::stoul(argv[8]);
 		const bool zoom = (std::stoul(argv[9]) != 0);
-		const size_t concurrent_estimations = std::stoul(argv[10]);
-		const size_t threads_per_estimation = std::stoul(argv[11]);
+		const std::size_t concurrent_estimations = std::stoul(argv[10]);
+		const std::size_t threads_per_estimation = std::stoul(argv[11]);
 		const std::string save_file = argv[12];
 
 		if (num_images == 0)
@@ -108,7 +108,7 @@ int main(int argc, char *argv[])
 			still_estimator_ptrs;
 
 		// initialize the single pose estimators
-		for (size_t i = 0; i < concurrent_estimations; i++) {
+		for (std::size_t i = 0; i < concurrent_estimations; i++) {
 			still_estimators.push_back(
 				std::unique_ptr<libaction::still::single::Estimator<float>>(
 					new libaction::still::single::Estimator<float>(
@@ -123,7 +123,7 @@ int main(int argc, char *argv[])
 		// initialize the callback
 		using callback_type = std::function<
 			std::unique_ptr<const boost::multi_array<uint8_t, 3>>(
-				size_t pos, bool last_image_access)>;
+				std::size_t pos, bool last_image_access)>;
 		callback_type callback(std::bind(
 			&motion_callback,
 			image_file_prefix, image_file_suffix,
@@ -134,7 +134,7 @@ int main(int argc, char *argv[])
 
 		auto time_before = std::chrono::steady_clock::now();
 
-		for (size_t i = 0; i < num_images; i++) {
+		for (std::size_t i = 0; i < num_images; i++) {
 			// do estimation
 			auto humans = motion_estimator.estimate(i, num_images,
 				fuzz_range, { }, true,

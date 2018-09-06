@@ -31,17 +31,17 @@ namespace detail
 // translate from cropped coordinates to the original image's
 inline std::pair<float, float> coord_translate(
 	float x, float y,
-	size_t original_height, size_t original_width,
-	size_t crop_x, size_t crop_y,
-	size_t crop_height, size_t crop_width
+	std::size_t original_height, std::size_t original_width,
+	std::size_t crop_x, std::size_t crop_y,
+	std::size_t crop_height, std::size_t crop_width
 ) {
 	if (crop_height == 0 || crop_width == 0)
 		throw std::runtime_error("crop_height == 0 || crop_width == 0");
 	if (original_height == 0 || original_width == 0)
 		throw std::runtime_error("original_height == 0 || original_width == 0");
 
-	size_t x2 = static_cast<size_t>(static_cast<float>(crop_height) * x);
-	size_t y2 = static_cast<size_t>(static_cast<float>(crop_width) * y);
+	std::size_t x2 = static_cast<std::size_t>(static_cast<float>(crop_height) * x);
+	std::size_t y2 = static_cast<std::size_t>(static_cast<float>(crop_width) * y);
 
 	x2 = std::min(x2, crop_height - 1);
 	y2 = std::min(y2, crop_width - 1);

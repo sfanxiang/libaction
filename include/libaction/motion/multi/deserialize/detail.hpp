@@ -32,13 +32,13 @@ namespace deserialize
 namespace detail
 {
 
-constexpr size_t max = 0x20000000;
+constexpr std::size_t max = 0x20000000;
 
 template<typename Iterator>
-inline std::vector<uint8_t> read_vector(Iterator &it, Iterator end, size_t size)
+inline std::vector<uint8_t> read_vector(Iterator &it, Iterator end, std::size_t size)
 {
 	std::vector<uint8_t> v;
-	for (size_t i = 0; i < size; i++) {
+	for (std::size_t i = 0; i < size; i++) {
 		if (it == end)
 			throw std::runtime_error("out of bound");
 		v.push_back(*it);

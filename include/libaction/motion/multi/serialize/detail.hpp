@@ -30,7 +30,7 @@ namespace serialize
 namespace detail
 {
 
-constexpr size_t max = 0x20000000;
+constexpr std::size_t max = 0x20000000;
 
 inline void write_float(float value, std::vector<uint8_t> &output)
 {

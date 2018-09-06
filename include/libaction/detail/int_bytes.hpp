@@ -40,10 +40,10 @@ to_bytes(Integral value)
 		typename std::remove_cv<Integral>::type>::type>::type
 	uvalue = value;
 
-	size_t size = sizeof(value);
+	std::size_t size = sizeof(value);
 	std::vector<uint8_t> result;
 
-	for (size_t i = 0; i < size; i++) {
+	for (std::size_t i = 0; i < size; i++) {
 		result.push_back((uvalue >> ((size - i - 1) * 8)) & 0xff);
 	}
 	return result;
@@ -68,12 +68,12 @@ to_int(const Bytes &bytes)
 		typename std::remove_cv<Integral>::type>::type>::type
 	uvalue = 0;
 
-	size_t size = sizeof(Integral);
+	std::size_t size = sizeof(Integral);
 
 	if (bytes.size() != size)
 		throw std::runtime_error("bytes.size() != size");
 
-	for (size_t i = 0; i < size; i++) {
+	for (std::size_t i = 0; i < size; i++) {
 		uvalue |= (static_cast<decltype(uvalue)>(static_cast<uint8_t>(bytes[i]))
 			<< ((size - i - 1) * 8));
 	}

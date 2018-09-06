@@ -94,10 +94,10 @@ struct hash<libaction::BodyPart::PartIndex>
 	/// Hash of libaction::BodyPart::PartIndex.
 
 	/// @return                 Hash of libaction::BodyPart::PartIndex.
-	size_t operator()(const libaction::BodyPart::PartIndex &index)
+	std::size_t operator()(const libaction::BodyPart::PartIndex &index)
 	const noexcept
 	{
-		return static_cast<size_t>(index);
+		return static_cast<std::size_t>(index);
 	}
 };
 

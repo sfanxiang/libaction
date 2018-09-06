@@ -80,7 +80,7 @@ public:
 	/// @exception              std::runtime_error
 	inline Estimator(
 		const std::string &graph_path, int threads,
-		size_t height, size_t width, size_t channels) :
+		std::size_t height, std::size_t width, std::size_t channels) :
 	model_height(height), model_width(width), model_channels(channels),
 	model(tflite::FlatBufferModel::BuildFromFile(
 		graph_path.c_str(), &error_reporter))
@@ -101,8 +101,8 @@ public:
 	/// @param[in]  channels    The number of color channels, usually 3.
 	/// @exception              std::runtime_error
 	inline Estimator(
-		const char *graph_buffer, size_t buffer_size, int threads,
-		size_t height, size_t width, size_t channels) :
+		const char *graph_buffer, std::size_t buffer_size, int threads,
+		std::size_t height, std::size_t width, std::size_t channels) :
 	model_height(height), model_width(width), model_channels(channels),
 	model(tflite::FlatBufferModel::BuildFromBuffer(
 		graph_buffer, buffer_size, &error_reporter))
@@ -159,7 +159,7 @@ public:
 		auto scores = get_points_confidence(heatmap_scores, *heatmap_coords);
 
 		std::list<libaction::BodyPart> parts;
-		for (size_t i = 0; i < keypoints_size; i++) {
+		for (std::size_t i = 0; i < keypoints_size; i++) {
 			if ((*scores)[i] >= part_score_threshold) {
 				parts.push_back(libaction::BodyPart(
 					detail::posenet_parts::to_libaction_part_index(
@@ -194,14 +194,14 @@ public:
 	}
 
 private:
-	const size_t output_stride = 16;
-	const size_t keypoints_size = 17;
-	const size_t part_count_threshold = 3;
+	const std::size_t output_stride = 16;
+	const std::size_t keypoints_size = 17;
+	const std::size_t part_count_threshold = 3;
 	const float default_score_threshold = 0.5f;
 
 	float part_score_threshold{default_score_threshold};
 
-	size_t model_height, model_width, model_channels;
+	std::size_t model_height, model_width, model_channels;
 
 	detail::ErrorReporter error_reporter{};
 	std::unique_ptr<tflite::FlatBufferModel> model;
@@ -220,13 +220,13 @@ private:
 
 	template<typename Offsets>
 	std::unique_ptr<std::vector<std::pair<float, float>>> get_offset_points(
-		const std::vector<std::pair<size_t, size_t>> &heatmap_coords,
+		const std::vector<std::pair<std::size_t, std::size_t>> &heatmap_coords,
 		const Offsets &offsets)
 	{
 		auto points = std::unique_ptr<std::vector<std::pair<float, float>>>(
 			new std::vector<std::pair<float, float>>());
 
-		size_t keypoint = 0;
+		std::size_t keypoint = 0;
 		for (auto &coord: heatmap_coords) {
 			auto x = offsets[coord.first][coord.second][keypoint];
 			auto y = offsets[coord.first][coord.second][keypoint + keypoints_size];
@@ -247,12 +247,12 @@ private:
 	template<typename HeatmapScores>
 	std::unique_ptr<std::vector<float>> get_points_confidence(
 		const HeatmapScores &scores,
-		const std::vector<std::pair<size_t, size_t>> &heatmap_coords)
+		const std::vector<std::pair<std::size_t, std::size_t>> &heatmap_coords)
 	{
 		auto res = std::unique_ptr<std::vector<float>>(
 			new std::vector<float>());
 
-		size_t keypoint = 0;
+		std::size_t keypoint = 0;
 		for (auto &coord: heatmap_coords) {
 			res->push_back(scores[coord.first][coord.second][keypoint]);
 

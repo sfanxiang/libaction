@@ -95,18 +95,18 @@ public:
 	///                         and still::single::zoom
 	template<typename StillEstimator, typename ZoomStillEstimator,
 		typename ImagePtr>
-	inline std::unique_ptr<std::unordered_map<size_t, libaction::Human>>
+	inline std::unique_ptr<std::unordered_map<std::size_t, libaction::Human>>
 	estimate(
-		size_t pos, size_t length,
-		size_t fuzz_range,
+		std::size_t pos, std::size_t length,
+		std::size_t fuzz_range,
 		const std::vector<std::tuple<
 			libaction::BodyPart::PartIndex, libaction::BodyPart::PartIndex,
 			float>> &max_lengths,
 		bool anti_crossing,
-		bool zoom, size_t zoom_range, size_t zoom_rate,
+		bool zoom, std::size_t zoom_range, std::size_t zoom_rate,
 		const std::vector<StillEstimator*> &still_estimators,
 		const std::vector<ZoomStillEstimator*> &zoom_still_estimators,
-		const std::function<ImagePtr(size_t pos, bool last_image_access)>
+		const std::function<ImagePtr(std::size_t pos, bool last_image_access)>
 			&callback
 	) {
 		if (length == 0)
@@ -126,16 +126,16 @@ public:
 
 			// zoomed_used only tracks zoomed tasks of frames which should be
 			// zoomed. unzoomed_used tracks unzoomed tasks of all frames.
-			std::unordered_set<size_t> unzoomed_used, zoomed_used;	// pos
+			std::unordered_set<std::size_t> unzoomed_used, zoomed_used;	// pos
 
 			// A task is removed from the queue only if it is certain to finish
 			// without dependending on any unfinished task. If a task is in the
 			// queue, then it has not been claimed yet.
-			std::list<std::pair<size_t, bool>> queue;	// pos, zoomed
+			std::list<std::pair<std::size_t, bool>> queue;	// pos, zoomed
 
 			// Populate the queue: this should cover every still estimation
 			// possibly required for generating the return value.
-			size_t range_l, range_r;
+			std::size_t range_l, range_r;
 			std::tie(range_l, range_r) =
 				fuzz::get_fuzz_lr(pos, length, fuzz_range);
 			if (anti_crossing && range_l > 0)
@@ -143,15 +143,15 @@ public:
 			if (anti_crossing && range_r < length - 1)
 				range_r++;
 
-			for (size_t i = range_l; i <= range_r; i++) {
+			for (std::size_t i = range_l; i <= range_r; i++) {
 				if (needs_zoom(zoom, i, zoom_rate) &&
 						still_poses.find(i) == still_poses.end() &&
 						zoomed_used.find(i) == zoomed_used.end()) {
-					size_t zoom_l, zoom_r;
+					std::size_t zoom_l, zoom_r;
 					std::tie(zoom_l, zoom_r) = libaction::still::single
 						::zoom::get_zoom_lr(i, length, zoom_range);
 
-					for (size_t j = zoom_l; j <= zoom_r; j++) {
+					for (std::size_t j = zoom_l; j <= zoom_r; j++) {
 						if (needs_zoom(zoom, j, zoom_rate)) {
 							if (unzoomed_still_poses.find(j) == unzoomed_still_poses.end() &&
 									unzoomed_used.find(j) == unzoomed_used.end()) {
@@ -177,10 +177,10 @@ public:
 				}
 			}
 
-			std::list<std::pair<size_t, bool>> extra_queue;	// pos, zoomed
+			std::list<std::pair<std::size_t, bool>> extra_queue;	// pos, zoomed
 
 			// Add extra tasks to make multithread truly effective.
-			for (size_t i = range_r + 1; ; ) {
+			for (std::size_t i = range_r + 1; ; ) {
 				// if the queue is empty, we don't need extra
 				if (queue.empty())
 					break;
@@ -195,11 +195,11 @@ public:
 				if (needs_zoom(zoom, i, zoom_rate) &&
 						still_poses.find(i) == still_poses.end() &&
 						zoomed_used.find(i) == zoomed_used.end()) {
-					size_t zoom_l, zoom_r;
+					std::size_t zoom_l, zoom_r;
 					std::tie(zoom_l, zoom_r) = libaction::still::single
 						::zoom::get_zoom_lr(i, length, zoom_range);
 
-					for (size_t j = zoom_l; j <= zoom_r; j++) {
+					for (std::size_t j = zoom_l; j <= zoom_r; j++) {
 						if (needs_zoom(zoom, j, zoom_rate)) {
 							if (unzoomed_still_poses.find(j) == unzoomed_still_poses.end() &&
 									unzoomed_used.find(j) == unzoomed_used.end()) {
@@ -278,7 +278,7 @@ public:
 				while (true) {
 					// statuses are all false
 
-					for (size_t i = 0; i < threads.size(); i++) {
+					for (std::size_t i = 0; i < threads.size(); i++) {
 						bool &status = *statuses[i];
 						cv.wait(lock, [&status] { return status; });
 					}
@@ -288,7 +288,7 @@ public:
 					if (queue.empty())
 						end = true;
 
-					for (size_t i = 0; i < threads.size(); i++) {
+					for (std::size_t i = 0; i < threads.size(); i++) {
 						bool &status = *statuses[i];
 						status = false;
 					}
@@ -315,9 +315,9 @@ public:
 
 		std::function<
 				std::pair<bool, std::unique_ptr<const libaction::Human>>
-				(size_t, bool)>
+				(std::size_t, bool)>
 		fuzz_cb = [pos, length, &max_lengths, anti_crossing, zoom, zoom_range, zoom_rate, &still_estimators, &zoom_still_estimators, &callback, this]
-			(size_t offset, bool left)
+			(std::size_t offset, bool left)
 				-> std::pair<bool, std::unique_ptr<const libaction::Human>>
 		{
 			return fuzz_callback(pos, length, max_lengths, anti_crossing,
@@ -342,28 +342,28 @@ public:
 
 private:
 	// poses which should be zoomed, estimated on their unzoomed image
-	std::unordered_map<size_t, std::unique_ptr<libaction::Human>> unzoomed_still_poses{};
+	std::unordered_map<std::size_t, std::unique_ptr<libaction::Human>> unzoomed_still_poses{};
 
 	// poses estimated on their zoomed image if they should be zoomed,
 	// otherwise poses estimated on their unzoomed image
-	std::unordered_map<size_t, std::unique_ptr<libaction::Human>> still_poses{};
+	std::unordered_map<std::size_t, std::unique_ptr<libaction::Human>> still_poses{};
 
-	static inline constexpr bool needs_zoom(bool zoom, size_t pos, size_t zoom_rate)
+	static inline constexpr bool needs_zoom(bool zoom, std::size_t pos, std::size_t zoom_rate)
 	{
 		return zoom && (zoom_rate != 0) && (pos % zoom_rate == 0);
 	}
 
 	inline bool zoom_estimation_possible(
-		size_t pos, size_t length, size_t zoom_range, size_t zoom_rate)
+		std::size_t pos, std::size_t length, std::size_t zoom_range, std::size_t zoom_rate)
 	{
 		if (pos >= length)
 			return false;
 
-		size_t l, r;
+		std::size_t l, r;
 		std::tie(l, r) = libaction::still::single::zoom::get_zoom_lr(
 			pos, length, zoom_range);
 
-		for (size_t i = l; i <= r; i++) {
+		for (std::size_t i = l; i <= r; i++) {
 			if (needs_zoom(true, i, zoom_rate) &&
 					unzoomed_still_poses.find(i) == unzoomed_still_poses.end())
 				return false;
@@ -377,8 +377,8 @@ private:
 
 	template<typename ImagePtr>
 	static inline ImagePtr get_image_from_callback(
-		size_t pos, bool last_image_access,
-		const std::function<ImagePtr(size_t pos, bool last_image_access)>
+		std::size_t pos, bool last_image_access,
+		const std::function<ImagePtr(std::size_t pos, bool last_image_access)>
 			&callback
 	) {
 		auto image = callback(pos, last_image_access);
@@ -406,10 +406,10 @@ private:
 
 	template<typename StillEstimator, typename Image>
 	static inline auto estimate_still_pose_from_image_on(
-		size_t pos,
+		std::size_t pos,
 		const Image &image,
 		StillEstimator &still_estimator,
-		std::unordered_map<size_t, std::unique_ptr<libaction::Human>> &poses)
+		std::unordered_map<std::size_t, std::unique_ptr<libaction::Human>> &poses)
 	-> std::remove_reference<decltype(poses)>::type::iterator
 	{
 		auto human = estimate_still_pose_from_image(image, still_estimator);
@@ -421,11 +421,11 @@ private:
 
 	template<typename StillEstimator, typename ImagePtr>
 	static inline auto estimate_still_pose_from_callback_on(
-		size_t pos, bool last_image_access,
-		const std::function<ImagePtr(size_t pos, bool last_image_access)>
+		std::size_t pos, bool last_image_access,
+		const std::function<ImagePtr(std::size_t pos, bool last_image_access)>
 			&callback,
 		StillEstimator &still_estimator,
-		std::unordered_map<size_t, std::unique_ptr<libaction::Human>> &poses)
+		std::unordered_map<std::size_t, std::unique_ptr<libaction::Human>> &poses)
 	-> std::pair<ImagePtr, std::remove_reference<decltype(poses)>::type::iterator>
 	{
 		auto image = get_image_from_callback(pos, last_image_access, callback);
@@ -441,16 +441,16 @@ private:
 	template<typename StillEstimator, typename ZoomStillEstimator,
 		typename ImagePtr>
 	std::pair<bool, bool> concurrent_preestimate_try_one(
-		size_t length, bool zoom, size_t zoom_range, size_t zoom_rate,
+		std::size_t length, bool zoom, std::size_t zoom_range, std::size_t zoom_rate,
 		StillEstimator &still_estimator,
 		ZoomStillEstimator &zoom_still_estimator,
-		const std::function<ImagePtr(size_t pos, bool last_image_access)>
+		const std::function<ImagePtr(std::size_t pos, bool last_image_access)>
 			&callback,
-		std::list<std::pair<size_t, bool>> &queue,
-		std::list<std::pair<size_t, bool>> &extra_queue,
+		std::list<std::pair<std::size_t, bool>> &queue,
+		std::list<std::pair<std::size_t, bool>> &extra_queue,
 		std::unique_lock<std::mutex> &lock)
 	{
-		size_t pos = 0;
+		std::size_t pos = 0;
 		bool zoomed = false;
 
 		// try to find the first possible task
@@ -500,13 +500,13 @@ private:
 
 				// now prepare the hints for a zoomed estimation
 
-				size_t l, r;
+				std::size_t l, r;
 				std::tie(l, r) = libaction::still::single::zoom::get_zoom_lr(
 					pos, length, zoom_range);
 
 				std::vector<const libaction::Human *> hints;
 
-				for (size_t i = l; i <= r; i++) {
+				for (std::size_t i = l; i <= r; i++) {
 					if (i == pos)
 						continue;
 
@@ -604,13 +604,13 @@ private:
 	template<typename StillEstimator, typename ZoomStillEstimator,
 		typename ImagePtr>
 	void concurrent_preestimate_one_ensure_work(
-		size_t length, bool zoom, size_t zoom_range, size_t zoom_rate,
+		std::size_t length, bool zoom, std::size_t zoom_range, std::size_t zoom_rate,
 		StillEstimator &still_estimator,
 		ZoomStillEstimator &zoom_still_estimator,
-		const std::function<ImagePtr(size_t pos, bool last_image_access)>
+		const std::function<ImagePtr(std::size_t pos, bool last_image_access)>
 			&callback,
-		std::list<std::pair<size_t, bool>> &queue,
-		std::list<std::pair<size_t, bool>> &extra_queue,
+		std::list<std::pair<std::size_t, bool>> &queue,
+		std::list<std::pair<std::size_t, bool>> &extra_queue,
 		std::unique_lock<std::mutex> &lock)
 	{
 		while (true) {
@@ -628,13 +628,13 @@ private:
 	template<typename StillEstimator, typename ZoomStillEstimator,
 		typename ImagePtr>
 	void concurrent_preestimate_loop(
-		size_t length, bool zoom, size_t zoom_range, size_t zoom_rate,
+		std::size_t length, bool zoom, std::size_t zoom_range, std::size_t zoom_rate,
 		StillEstimator &still_estimator,
 		ZoomStillEstimator &zoom_still_estimator,
-		const std::function<ImagePtr(size_t pos, bool last_image_access)>
+		const std::function<ImagePtr(std::size_t pos, bool last_image_access)>
 			&callback,
-		std::list<std::pair<size_t, bool>> &queue,
-		std::list<std::pair<size_t, bool>> &extra_queue,
+		std::list<std::pair<std::size_t, bool>> &queue,
+		std::list<std::pair<std::size_t, bool>> &extra_queue,
 		std::mutex &mutex,
 		std::condition_variable &cv,
 		bool &status, bool &end)
@@ -673,13 +673,13 @@ private:
 	template<typename StillEstimator, typename ZoomStillEstimator,
 		typename ImagePtr>
 	void concurrent_preestimate(
-		size_t length, bool zoom, size_t zoom_range, size_t zoom_rate,
+		std::size_t length, bool zoom, std::size_t zoom_range, std::size_t zoom_rate,
 		StillEstimator &still_estimator,
 		ZoomStillEstimator &zoom_still_estimator,
-		const std::function<ImagePtr(size_t pos, bool last_image_access)>
+		const std::function<ImagePtr(std::size_t pos, bool last_image_access)>
 			&callback,
-		std::list<std::pair<size_t, bool>> &queue,
-		std::list<std::pair<size_t, bool>> &extra_queue,
+		std::list<std::pair<std::size_t, bool>> &queue,
+		std::list<std::pair<std::size_t, bool>> &extra_queue,
 		std::mutex &mutex,
 		std::condition_variable &cv,
 		bool &status, bool &end)
@@ -704,13 +704,13 @@ private:
 
 	template<typename StillEstimator, typename ImagePtr>
 	std::pair<bool, const libaction::Human *>
-	fuzz_callback_before_anti_crossing(size_t pos, size_t length,
-		bool zoom, size_t zoom_range, size_t zoom_rate,
+	fuzz_callback_before_anti_crossing(std::size_t pos, std::size_t length,
+		bool zoom, std::size_t zoom_range, std::size_t zoom_rate,
 		StillEstimator &still_estimator,
 		StillEstimator &zoom_still_estimator,
-		const std::function<ImagePtr(size_t pos, bool last_image_access)>
+		const std::function<ImagePtr(std::size_t pos, bool last_image_access)>
 			&callback,
-		size_t offset, bool left)
+		std::size_t offset, bool left)
 	{
 		if (pos >= length)
 			return std::make_pair(false, nullptr);
@@ -757,14 +757,14 @@ private:
 
 				// now prepare the hints for a zoomed estimation
 
-				size_t l, r;
+				std::size_t l, r;
 				std::tie(l, r) = libaction::still::single::zoom::get_zoom_lr(
 					pos, length, zoom_range);
 
 				std::vector<const libaction::Human *> hints;
 
 				// make all unzoomed estimations available within zoom_range
-				for (size_t i = l; i <= r; i++) {
+				for (std::size_t i = l; i <= r; i++) {
 					if (i == pos)
 						continue;
 
@@ -847,14 +847,14 @@ private:
 		std::unique_ptr<const libaction::Human,
 			std::function<void(const libaction::Human *)>>
 		>
-	fuzz_callback_before_max_lengths(size_t pos, size_t length,
+	fuzz_callback_before_max_lengths(std::size_t pos, std::size_t length,
 		bool anti_crossing,
-		bool zoom, size_t zoom_range, size_t zoom_rate,
+		bool zoom, std::size_t zoom_range, std::size_t zoom_rate,
 		StillEstimator &still_estimator,
 		StillEstimator &zoom_still_estimator,
-		const std::function<ImagePtr(size_t pos, bool last_image_access)>
+		const std::function<ImagePtr(std::size_t pos, bool last_image_access)>
 			&callback,
-		size_t offset, bool left)
+		std::size_t offset, bool left)
 	{
 		auto result = fuzz_callback_before_anti_crossing(pos, length,
 			zoom, zoom_range, zoom_rate,
@@ -865,7 +865,7 @@ private:
 			std::pair<bool, const libaction::Human *> left_human, right_human;
 			{
 				// left
-				size_t offset2 = offset;
+				std::size_t offset2 = offset;
 				bool left2 = left;
 				if (left2) {
 					offset2++;
@@ -884,7 +884,7 @@ private:
 			}
 			{
 				// right
-				size_t offset2 = offset;
+				std::size_t offset2 = offset;
 				bool left2 = left;
 				if (!left2) {
 					offset2++;
@@ -932,17 +932,17 @@ private:
 
 	template<typename StillEstimator, typename ImagePtr>
 	std::pair<bool, std::unique_ptr<const libaction::Human>>
-	fuzz_callback(size_t pos, size_t length,
+	fuzz_callback(std::size_t pos, std::size_t length,
 		const std::vector<std::tuple<
 			libaction::BodyPart::PartIndex, libaction::BodyPart::PartIndex,
 			float>> &max_lengths,
 		bool anti_crossing,
-		bool zoom, size_t zoom_range, size_t zoom_rate,
+		bool zoom, std::size_t zoom_range, std::size_t zoom_rate,
 		StillEstimator &still_estimator,
 		StillEstimator &zoom_still_estimator,
-		const std::function<ImagePtr(size_t pos, bool last_image_access)>
+		const std::function<ImagePtr(std::size_t pos, bool last_image_access)>
 			&callback,
-		size_t offset, bool left)
+		std::size_t offset, bool left)
 	{
 		auto result = fuzz_callback_before_max_lengths(pos, length,
 			anti_crossing,
@@ -978,16 +978,16 @@ private:
 	}
 
 	/// Get the processed human pose to return to the user.
-	inline static std::unique_ptr<std::unordered_map<size_t, libaction::Human>>
+	inline static std::unique_ptr<std::unordered_map<std::size_t, libaction::Human>>
 	get_human_pose(const std::unique_ptr<libaction::Human> &human)
 	{
 		if (human) {
-			return std::unique_ptr<std::unordered_map<size_t, libaction::Human>>(
-				new std::unordered_map<size_t, libaction::Human>(
+			return std::unique_ptr<std::unordered_map<std::size_t, libaction::Human>>(
+				new std::unordered_map<std::size_t, libaction::Human>(
 					{ std::make_pair(0, *human) }));
 		} else {
-			return std::unique_ptr<std::unordered_map<size_t, libaction::Human>>(
-				new std::unordered_map<size_t, libaction::Human>());
+			return std::unique_ptr<std::unordered_map<std::size_t, libaction::Human>>(
+				new std::unordered_map<std::size_t, libaction::Human>());
 		}
 	}
 };

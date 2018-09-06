@@ -34,7 +34,7 @@ namespace image
 // TODO: Resize is the second bottleneck. Optimize this function.
 template<typename Input>
 std::unique_ptr<boost::multi_array<typename Input::element, 3>> resize(
-	const Input &image, size_t target_height, size_t target_width)
+	const Input &image, std::size_t target_height, std::size_t target_width)
 {
 	if (image.num_dimensions() != 3 ||
 			image.shape()[0] == 0 || image.shape()[1] == 0 ||
@@ -54,15 +54,15 @@ std::unique_ptr<boost::multi_array<typename Input::element, 3>> resize(
 	float x_ratio = static_cast<float>(height) / target_height;
 	float y_ratio = static_cast<float>(width) / target_width;
 
-	for (size_t i = 0; i < target_height; i++) {
-		for (size_t j = 0; j < target_width; j++) {
-			size_t x = height * i / target_height;
-			size_t y = width * j / target_width;
+	for (std::size_t i = 0; i < target_height; i++) {
+		for (std::size_t j = 0; j < target_width; j++) {
+			std::size_t x = height * i / target_height;
+			std::size_t y = width * j / target_width;
 			float x_diff = (x_ratio * i) - x;
 			float y_diff = (y_ratio * j) - y;
 
 			if (x + 1 < height && y + 1 < width) {
-				for (size_t k = 0; k < channels; k++) {
+				for (std::size_t k = 0; k < channels; k++) {
 					(*target_image)[i][j][k] =
 						image[x][y][k] * (1 - x_diff) * (1 - y_diff) +
 						image[x][y + 1][k] * (1 - x_diff) * y_diff +
@@ -70,19 +70,19 @@ std::unique_ptr<boost::multi_array<typename Input::element, 3>> resize(
 						image[x + 1][y + 1][k] * x_diff * y_diff;
 				}
 			} else if (x + 1 < height) {
-				for (size_t k = 0; k < channels; k++) {
+				for (std::size_t k = 0; k < channels; k++) {
 					(*target_image)[i][j][k] =
 						image[x][y][k] * (1 - x_diff) +
 						image[x + 1][y][k] * x_diff;
 				}
 			} else if (y + 1 < width) {
-				for (size_t k = 0; k < channels; k++) {
+				for (std::size_t k = 0; k < channels; k++) {
 					(*target_image)[i][j][k] =
 						image[x][y][k] * (1 - y_diff) +
 						image[x][y + 1][k] * y_diff;
 				}
 			} else {
-				for (size_t k = 0; k < channels; k++) {
+				for (std::size_t k = 0; k < channels; k++) {
 					(*target_image)[i][j][k] = image[x][y][k];
 				}
 			}
@@ -95,8 +95,8 @@ std::unique_ptr<boost::multi_array<typename Input::element, 3>> resize(
 template<typename Input>
 std::unique_ptr<boost::multi_array<typename Input::element, 3>> crop(
 	const Input &image,
-	size_t x, size_t y,
-	size_t target_height, size_t target_width)
+	std::size_t x, std::size_t y,
+	std::size_t target_height, std::size_t target_width)
 {
 	if (image.num_dimensions() != 3)
 		throw std::runtime_error("invalid image");
@@ -105,19 +105,19 @@ std::unique_ptr<boost::multi_array<typename Input::element, 3>> crop(
 	auto width = image.shape()[1];
 	auto channels = image.shape()[2];
 
-	size_t x1 = std::min(x, height);
-	size_t y1 = std::min(y, width);
-	size_t x2 = std::min(x1 + target_height, height);
-	size_t y2 = std::min(y1 + target_width, width);
+	std::size_t x1 = std::min(x, height);
+	std::size_t y1 = std::min(y, width);
+	std::size_t x2 = std::min(x1 + target_height, height);
+	std::size_t y2 = std::min(y1 + target_width, width);
 
 	auto target_image = std::unique_ptr<
 		boost::multi_array<typename Input::element, 3>>(
 			new boost::multi_array<typename Input::element, 3>(
 				boost::extents[x2 - x1][y2 - y1][channels]));
 
-	for (size_t i = x1; i < x2; i++) {
-		for (size_t j = y1; j < y2; j++) {
-			for (size_t k = 0; k < channels; k++) {
+	for (std::size_t i = x1; i < x2; i++) {
+		for (std::size_t j = y1; j < y2; j++) {
+			for (std::size_t k = 0; k < channels; k++) {
 				(*target_image)[i - x1][j - y1][k] = image[i][j][k];
 			}
 		}
