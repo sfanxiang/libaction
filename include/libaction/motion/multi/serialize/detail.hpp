@@ -51,7 +51,7 @@ inline void write_body_parts_bitmap(const libaction::Human &human,
 	static_assert(static_cast<int>(libaction::BodyPart::PartIndex::end) < 32,
 		"static_cast<int>(libaction::BodyPart::PartIndex::end) < 32");
 
-	uint32_t bitmap = 0;
+	std::uint32_t bitmap = 0;
 	for (int i = 0; i < static_cast<int>(libaction::BodyPart::PartIndex::end);
 			i++) {
 		if (human.body_parts().find(static_cast<libaction::BodyPart::PartIndex>
@@ -91,10 +91,10 @@ inline void write_human_map(const HumanMap &human_map,
 	if (human_map.size() >= max)
 		throw std::runtime_error("too many items");
 
-	write_int(static_cast<uint32_t>(human_map.size()), output);
+	write_int(static_cast<std::uint32_t>(human_map.size()), output);
 
 	for (auto &human_pair: human_map) {
-		uint32_t index = human_pair.first;
+		std::uint32_t index = human_pair.first;
 		if (index > max)
 			index = max;
 		write_int(index, output);

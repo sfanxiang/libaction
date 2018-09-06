@@ -41,9 +41,9 @@ deserialize(const Data &data, bool magic = true)
 	typename Data::const_iterator it = data.begin();
 
 	if (magic)
-		detail::read_int<uint32_t>(it, data.end());	// ignore 4 bytes
+		detail::read_int<std::uint32_t>(it, data.end());	// ignore 4 bytes
 
-	auto action_size = detail::read_int<uint32_t>(it, data.end());
+	auto action_size = detail::read_int<std::uint32_t>(it, data.end());
 	if (action_size >= detail::max)
 		throw std::runtime_error("too many items");
 
@@ -51,7 +51,7 @@ deserialize(const Data &data, bool magic = true)
 		std::size_t, libaction::Human>>>(
 			new std::list<std::unordered_map<std::size_t, libaction::Human>>());
 
-	for (uint32_t i = 0; i < action_size; i++) {
+	for (std::uint32_t i = 0; i < action_size; i++) {
 		action->push_back(detail::read_human_map(it, data.end()));
 	}
 

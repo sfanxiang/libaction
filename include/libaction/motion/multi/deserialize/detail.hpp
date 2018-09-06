@@ -67,7 +67,7 @@ read_body_parts_bitmap(Iterator &it, Iterator end)
 {
 	std::vector<libaction::BodyPart::PartIndex> ind;
 
-	auto bitmap = read_int<uint32_t>(it, end);
+	auto bitmap = read_int<std::uint32_t>(it, end);
 
 	static_assert(static_cast<int>(libaction::BodyPart::PartIndex::end) < 32,
 		"static_cast<int>(libaction::BodyPart::PartIndex::end) < 32");
@@ -108,13 +108,13 @@ template<typename Iterator>
 inline std::unordered_map<std::size_t, libaction::Human>
 read_human_map(Iterator &it, Iterator end)
 {
-	auto human_map_size = read_int<uint32_t>(it, end);
+	auto human_map_size = read_int<std::uint32_t>(it, end);
 	if (human_map_size >= max)
 		throw std::runtime_error("too many items");
 
 	std::unordered_map<std::size_t, libaction::Human> human_map;
-	for (uint32_t i = 0; i < human_map_size; i++) {
-		auto index = read_int<uint32_t>(it, end);
+	for (std::uint32_t i = 0; i < human_map_size; i++) {
+		auto index = read_int<std::uint32_t>(it, end);
 		if (index > max)
 			index = max;
 

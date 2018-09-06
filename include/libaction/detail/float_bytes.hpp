@@ -73,7 +73,7 @@ std::vector<std::uint8_t> to_bytes(float value)
 	}
 
 	std::uint8_t exp = exp_int;
-	uint32_t mant = static_cast<uint32_t>(value);
+	std::uint32_t mant = static_cast<std::uint32_t>(value);
 
 	return {
 		static_cast<std::uint8_t>((sign ? 0x80U : 0U) | exp >> 1),
@@ -89,11 +89,11 @@ float to_float(const Bytes &bytes)
 	if (bytes.size() != 4)
 		throw std::runtime_error("bytes.size() != 4");
 
-	uint32_t num =
-		(static_cast<uint32_t>(static_cast<std::uint8_t>(bytes[0])) << 24) |
-		(static_cast<uint32_t>(static_cast<std::uint8_t>(bytes[1])) << 16) |
-		(static_cast<uint32_t>(static_cast<std::uint8_t>(bytes[2])) << 8) |
-		static_cast<uint32_t>(static_cast<std::uint8_t>(bytes[3]));
+	std::uint32_t num =
+		(static_cast<std::uint32_t>(static_cast<std::uint8_t>(bytes[0])) << 24) |
+		(static_cast<std::uint32_t>(static_cast<std::uint8_t>(bytes[1])) << 16) |
+		(static_cast<std::uint32_t>(static_cast<std::uint8_t>(bytes[2])) << 8) |
+		static_cast<std::uint32_t>(static_cast<std::uint8_t>(bytes[3]));
 
 	bool sign = ((num & 0x80000000U) != 0U);
 

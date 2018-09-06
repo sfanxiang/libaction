@@ -70,9 +70,9 @@ int main(int argc, char *argv[])
 		std::map<std::pair<libaction::BodyPart::PartIndex,
 			libaction::BodyPart::PartIndex>, uint64_t> part_sums;
 		std::map<std::pair<libaction::BodyPart::PartIndex,
-			libaction::BodyPart::PartIndex>, uint32_t> part_counts;
+			libaction::BodyPart::PartIndex>, std::uint32_t> part_counts;
 		uint64_t frame_sum = 0;
-		uint32_t frame_count = 0;
+		std::uint32_t frame_count = 0;
 
 		auto sample_it = sample->begin();
 		auto standard_it = standard->begin();
@@ -97,19 +97,19 @@ int main(int argc, char *argv[])
 			auto scores = libaction::still::single::score::score(
 				human1, human2);
 
-			uint32_t sum = 0;
+			std::uint32_t sum = 0;
 			std::cout << "======== Image #" << i << " ========" << std::endl;
 			for (auto &score: *scores) {
 				std::cout << static_cast<int>(score.first.first) << ", "
 					<< static_cast<int>(score.first.second) << ": "
-					<< static_cast<uint32_t>(score.second) * 100 / 128
+					<< static_cast<std::uint32_t>(score.second) * 100 / 128
 					<< std::endl;
-				sum += static_cast<uint32_t>(score.second);
+				sum += static_cast<std::uint32_t>(score.second);
 				part_sums[score.first] += score.second;
 				part_counts[score.first]++;
 			}
 			if (!scores->empty()) {
-				uint32_t average = sum * 100 / 128 / scores->size();
+				std::uint32_t average = sum * 100 / 128 / scores->size();
 				std::cout << "average: " << average << std::endl;
 				frame_sum += sum / scores->size();
 				frame_count++;

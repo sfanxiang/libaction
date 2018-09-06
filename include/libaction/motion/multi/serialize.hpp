@@ -57,7 +57,7 @@ serialize(const Action &action, bool magic = true)
 	if (action.size() >= detail::max)
 		throw std::runtime_error("too many items");
 
-	detail::write_int(static_cast<uint32_t>(action.size()), *data);
+	detail::write_int(static_cast<std::uint32_t>(action.size()), *data);
 
 	for (auto &human_map: action) {
 		detail::write_human_map(human_map, *data);
