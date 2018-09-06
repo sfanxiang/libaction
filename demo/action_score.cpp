@@ -67,10 +67,6 @@ int main(int argc, char *argv[])
 		auto standard =
 			libaction::motion::multi::deserialize::deserialize(*standard_data);
 
-		if (sample->size() > standard->size()) {
-			throw std::runtime_error("sample size too large");
-		}
-
 		std::map<std::pair<libaction::BodyPart::PartIndex,
 			libaction::BodyPart::PartIndex>, uint64_t> part_sums;
 		std::map<std::pair<libaction::BodyPart::PartIndex,
@@ -81,7 +77,8 @@ int main(int argc, char *argv[])
 		auto sample_it = sample->begin();
 		auto standard_it = standard->begin();
 
-		for (size_t i = 0; i < sample->size(); i++, sample_it++, standard_it++)
+		for (size_t i = 0; i < sample->size() && i < standard->size();
+			i++, sample_it++, standard_it++)
 		{
 			auto &sample_frame = *sample_it;
 			auto &standard_frame = *standard_it;
