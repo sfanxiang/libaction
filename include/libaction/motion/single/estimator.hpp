@@ -432,10 +432,11 @@ private:
 		return std::make_pair(std::move(image), it);
 	}
 
-	/// Estimate one for concurrent(multithread) estimation.
+	/// Try doing one task for concurrent(multithread) estimation. Returns
+	/// (did_task, did_work).
 	template<typename StillEstimator, typename ZoomStillEstimator,
 		typename ImagePtr>
-	void concurrent_preestimate_one(
+	std::pair<bool, bool> concurrent_preestimate_try_one(
 		size_t length, bool zoom, size_t zoom_range, size_t zoom_rate,
 		StillEstimator &still_estimator,
 		ZoomStillEstimator &zoom_still_estimator,
@@ -483,7 +484,7 @@ private:
 			}
 		}
 		if (!found)
-			return;
+			return std::make_pair(false, false);
 
 		if (zoomed) {
 			auto unzoomed_it = unzoomed_still_poses.find(pos);
@@ -555,6 +556,8 @@ private:
 				// zoomed estimations for images which should be zoomed go
 				// to still_poses
 				still_poses.insert(std::make_pair(pos, std::move(human)));
+
+				return std::make_pair(true, true);
 			} else {
 				// no human found in unzoomed image
 				// impossible to do zoomed estimation
@@ -564,6 +567,9 @@ private:
 				get_image_from_callback(pos, true, callback);
 
 				still_poses.insert(std::make_pair(pos, std::unique_ptr<libaction::Human>()));
+
+				// finished one task, but no work is done
+				return std::make_pair(true, false);
 			}
 		} else {
 			bool eventually_zoom = needs_zoom(zoom, pos, zoom_rate);
@@ -584,6 +590,34 @@ private:
 
 			(eventually_zoom ? unzoomed_still_poses : still_poses)
 				.insert(std::make_pair(pos, std::move(human)));
+
+			return std::make_pair(true, true);
+		}
+	}
+
+	// Do tasks until one unit of work is done for concurrent(multithread)
+	// estimation.
+	template<typename StillEstimator, typename ZoomStillEstimator,
+		typename ImagePtr>
+	void concurrent_preestimate_one_ensure_work(
+		size_t length, bool zoom, size_t zoom_range, size_t zoom_rate,
+		StillEstimator &still_estimator,
+		ZoomStillEstimator &zoom_still_estimator,
+		const std::function<ImagePtr(size_t pos, bool last_image_access)>
+			&callback,
+		std::list<std::pair<size_t, bool>> &queue,
+		std::list<std::pair<size_t, bool>> &extra_queue,
+		std::unique_lock<std::mutex> &lock)
+	{
+		while (true) {
+			auto result = concurrent_preestimate_try_one(length,
+				zoom, zoom_range, zoom_rate,
+				still_estimator, zoom_still_estimator, callback,
+				queue, extra_queue, lock);
+
+			// bail out if either some work is done or no task is available
+			if (result.second || !result.first)
+				break;
 		}
 	}
 
@@ -607,7 +641,7 @@ private:
 			{
 				std::unique_lock<std::mutex> lock(mutex);
 
-				concurrent_preestimate_one(
+				concurrent_preestimate_one_ensure_work(
 					length, zoom, zoom_range, zoom_rate,
 					still_estimator, zoom_still_estimator, callback,
 					queue, extra_queue, lock
