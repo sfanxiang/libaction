@@ -50,7 +50,8 @@ static std::unique_ptr<const boost::multi_array<uint8_t, 3>> read_image(
 static std::unique_ptr<const boost::multi_array<uint8_t, 3>> motion_callback(
 	const std::string &image_file_prefix,
 	const std::string &image_file_suffix,
-	size_t image_height, size_t image_width, size_t channels, size_t pos
+	size_t image_height, size_t image_width, size_t channels,
+	size_t pos, bool /* last_image_access */
 ) {
 	// read the image
 	auto image = read_image(
@@ -121,12 +122,13 @@ int main(int argc, char *argv[])
 
 		// initialize the callback
 		using callback_type = std::function<
-			std::unique_ptr<const boost::multi_array<uint8_t, 3>>(size_t pos)>;
+			std::unique_ptr<const boost::multi_array<uint8_t, 3>>(
+				size_t pos, bool last_image_access)>;
 		callback_type callback(std::bind(
 			&motion_callback,
 			image_file_prefix, image_file_suffix,
 			image_height, image_width, channels,
-			std::placeholders::_1));
+			std::placeholders::_1, std::placeholders::_2));
 
 		std::list<std::unordered_map<std::size_t, libaction::Human>> action;
 
