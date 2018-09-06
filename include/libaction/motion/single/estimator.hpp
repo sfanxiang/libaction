@@ -81,10 +81,11 @@ public:
 	/// @param[in]  callback    A callback function allowing random access to
 	///                         the image frame at `pos`. `last_image_access`
 	///                         indicates whether the image at `pos` is no
-	///                         longer needed. The same image at `pos` may be
-	///                         retrieved multiple times. The callback should
-	///                         return a valid pointer to the image, which must
-	///                         conform to the Boost.MultiArray concept.
+	///                         longer needed (if no error occurs). The same
+	///                         image at `pos` may be retrieved multiple times.
+	///                         The callback should return a valid pointer to
+	///                         the image, which must conform to the
+	///                         Boost.MultiArray concept.
 	/// @warning                `callback` may be called concurrently from
 	///                         different threads if `still_estimators` has
 	///                         more than one element.
@@ -307,6 +308,9 @@ public:
 				for (auto &thread: threads)
 					thread.join();
 			}
+
+			// TODO: Handle errors from other threads. If they are not handled,
+			//       it's a waste of time to continue single-threadedly.
 		}
 
 		std::function<
