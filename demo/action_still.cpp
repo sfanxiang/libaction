@@ -25,15 +25,15 @@
 #include <utility>
 #include <vector>
 
-static std::unique_ptr<const boost::multi_array<uint8_t, 3>> read_image(
+static std::unique_ptr<const boost::multi_array<std::uint8_t, 3>> read_image(
 	const std::string &file, std::size_t height, std::size_t width, std::size_t channels)
 {
 	FILE *f = std::fopen(file.c_str(), "rb");
 	if (!f)
 		throw std::runtime_error("failed to open image file");
 
-	auto image = std::unique_ptr<boost::multi_array<uint8_t, 3>>(
-		new boost::multi_array<uint8_t, 3>(
+	auto image = std::unique_ptr<boost::multi_array<std::uint8_t, 3>>(
+		new boost::multi_array<std::uint8_t, 3>(
 			boost::extents[height][width][channels]));
 	auto count = std::fread(image->data(), image->num_elements(), 1, f);
 

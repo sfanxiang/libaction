@@ -27,15 +27,15 @@
 #include <utility>
 #include <vector>
 
-static std::unique_ptr<const boost::multi_array<uint8_t, 3>> read_image(
+static std::unique_ptr<const boost::multi_array<std::uint8_t, 3>> read_image(
 	const std::string &file, std::size_t height, std::size_t width, std::size_t channels)
 {
 	FILE *f = std::fopen(file.c_str(), "rb");
 	if (!f)
 		throw std::runtime_error("failed to open image file");
 
-	auto image = std::unique_ptr<boost::multi_array<uint8_t, 3>>(
-		new boost::multi_array<uint8_t, 3>(
+	auto image = std::unique_ptr<boost::multi_array<std::uint8_t, 3>>(
+		new boost::multi_array<std::uint8_t, 3>(
 			boost::extents[height][width][channels]));
 	auto count = std::fread(image->data(), image->num_elements(), 1, f);
 
@@ -47,7 +47,7 @@ static std::unique_ptr<const boost::multi_array<uint8_t, 3>> read_image(
 	return image;
 }
 
-static std::unique_ptr<const boost::multi_array<uint8_t, 3>> motion_callback(
+static std::unique_ptr<const boost::multi_array<std::uint8_t, 3>> motion_callback(
 	const std::string &image_file_prefix,
 	const std::string &image_file_suffix,
 	std::size_t image_height, std::size_t image_width, std::size_t channels,
@@ -122,7 +122,7 @@ int main(int argc, char *argv[])
 
 		// initialize the callback
 		using callback_type = std::function<
-			std::unique_ptr<const boost::multi_array<uint8_t, 3>>(
+			std::unique_ptr<const boost::multi_array<std::uint8_t, 3>>(
 				std::size_t pos, bool last_image_access)>;
 		callback_type callback(std::bind(
 			&motion_callback,

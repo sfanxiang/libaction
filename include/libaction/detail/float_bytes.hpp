@@ -21,26 +21,26 @@ namespace detail
 namespace float_bytes
 {
 
-std::vector<uint8_t> to_bytes(float value)
+std::vector<std::uint8_t> to_bytes(float value)
 {
 	bool sign = std::signbit(value);
 
 	if (std::isnan(value)) {
 		return {
-			static_cast<uint8_t>((sign ? 0x80U : 0U) | 0x7fU),
+			static_cast<std::uint8_t>((sign ? 0x80U : 0U) | 0x7fU),
 			0xc0U,
 			0U, 0U
 		};
 	}
 	if (!std::isfinite(value)) {
 		return {
-			static_cast<uint8_t>((sign ? 0x80U : 0U) | 0x7fU),
+			static_cast<std::uint8_t>((sign ? 0x80U : 0U) | 0x7fU),
 			0x80U,
 			0U, 0U
 		};
 	}
 	if (value == 0.0f)
-		return { static_cast<uint8_t>(sign ? 0x80U : 0U), 0U, 0U, 0U };
+		return { static_cast<std::uint8_t>(sign ? 0x80U : 0U), 0U, 0U, 0U };
 
 	value = std::copysign(value, +1.0f);
 
@@ -50,7 +50,7 @@ std::vector<uint8_t> to_bytes(float value)
 	if (exp_int >= 0xff || value > 1.0f) {
 		// infinity
 		return {
-			static_cast<uint8_t>((sign ? 0x80U : 0U) | 0x7fU),
+			static_cast<std::uint8_t>((sign ? 0x80U : 0U) | 0x7fU),
 			0x80U,
 			0U, 0U
 		};
@@ -62,24 +62,24 @@ std::vector<uint8_t> to_bytes(float value)
 	if (!std::isfinite(value) || exp_int >= 0xff) {
 		// infinity
 		return {
-			static_cast<uint8_t>((sign ? 0x80U : 0U) | 0x7fU),
+			static_cast<std::uint8_t>((sign ? 0x80U : 0U) | 0x7fU),
 			0x80U,
 			0U, 0U
 		};
 	}
 	if (exp_int <= 0) {
 		// zero, or subnormal(ignored)
-		return { static_cast<uint8_t>(sign ? 0x80U : 0U), 0U, 0U, 0U };
+		return { static_cast<std::uint8_t>(sign ? 0x80U : 0U), 0U, 0U, 0U };
 	}
 
-	uint8_t exp = exp_int;
+	std::uint8_t exp = exp_int;
 	uint32_t mant = static_cast<uint32_t>(value);
 
 	return {
-		static_cast<uint8_t>((sign ? 0x80U : 0U) | exp >> 1),
-		static_cast<uint8_t>(((exp << 7) & 0x80U) | ((mant >> 16) & 0x7fU)),
-		static_cast<uint8_t>((mant >> 8) & 0xffU),
-		static_cast<uint8_t>(mant & 0xffU)
+		static_cast<std::uint8_t>((sign ? 0x80U : 0U) | exp >> 1),
+		static_cast<std::uint8_t>(((exp << 7) & 0x80U) | ((mant >> 16) & 0x7fU)),
+		static_cast<std::uint8_t>((mant >> 8) & 0xffU),
+		static_cast<std::uint8_t>(mant & 0xffU)
 	};
 }
 
@@ -90,10 +90,10 @@ float to_float(const Bytes &bytes)
 		throw std::runtime_error("bytes.size() != 4");
 
 	uint32_t num =
-		(static_cast<uint32_t>(static_cast<uint8_t>(bytes[0])) << 24) |
-		(static_cast<uint32_t>(static_cast<uint8_t>(bytes[1])) << 16) |
-		(static_cast<uint32_t>(static_cast<uint8_t>(bytes[2])) << 8) |
-		static_cast<uint32_t>(static_cast<uint8_t>(bytes[3]));
+		(static_cast<uint32_t>(static_cast<std::uint8_t>(bytes[0])) << 24) |
+		(static_cast<uint32_t>(static_cast<std::uint8_t>(bytes[1])) << 16) |
+		(static_cast<uint32_t>(static_cast<std::uint8_t>(bytes[2])) << 8) |
+		static_cast<uint32_t>(static_cast<std::uint8_t>(bytes[3]));
 
 	bool sign = ((num & 0x80000000U) != 0U);
 
@@ -124,7 +124,7 @@ float to_float(const Bytes &bytes)
 			return std::copysign(0.0f, (sign ? -1.0f : +1.0f));
 		}
 	} else {
-		uint8_t exp = (num & 0x7f800000U) >> 23;
+		std::uint8_t exp = (num & 0x7f800000U) >> 23;
 		int exp_int = static_cast<int>(exp) - 126 - 24;
 		float mant = static_cast<float>((num & 0x7fffffU) | 0x800000U);
 		return std::copysign(

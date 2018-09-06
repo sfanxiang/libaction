@@ -21,15 +21,15 @@
 #include <string>
 #include <utility>
 
-static std::unique_ptr<std::vector<uint8_t>> read_file(
+static std::unique_ptr<std::vector<std::uint8_t>> read_file(
 	const std::string &file, std::size_t max)
 {
 	FILE *f = std::fopen(file.c_str(), "rb");
 	if (!f)
 		throw std::runtime_error("failed to open file");
 
-	auto data = std::unique_ptr<std::vector<uint8_t>>(
-		new std::vector<uint8_t>());
+	auto data = std::unique_ptr<std::vector<std::uint8_t>>(
+		new std::vector<std::uint8_t>());
 
 	int c;
 	while (data->size() < max && (c = std::fgetc(f)) != EOF) {
@@ -37,7 +37,7 @@ static std::unique_ptr<std::vector<uint8_t>> read_file(
 			std::fclose(f);
 			throw std::runtime_error("failed to read file");
 		}
-		data->push_back(static_cast<uint8_t>(c));
+		data->push_back(static_cast<std::uint8_t>(c));
 	}
 
 	std::fclose(f);

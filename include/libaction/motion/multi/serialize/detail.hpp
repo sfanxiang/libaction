@@ -32,21 +32,21 @@ namespace detail
 
 constexpr std::size_t max = 0x20000000;
 
-inline void write_float(float value, std::vector<uint8_t> &output)
+inline void write_float(float value, std::vector<std::uint8_t> &output)
 {
 	auto bytes = libaction::detail::float_bytes::to_bytes(value);
 	output.insert(output.end(), bytes.begin(), bytes.end());
 }
 
 template<typename Integral>
-inline void write_int(Integral value, std::vector<uint8_t> &output)
+inline void write_int(Integral value, std::vector<std::uint8_t> &output)
 {
 	auto bytes = libaction::detail::int_bytes::to_bytes(value);
 	output.insert(output.end(), bytes.begin(), bytes.end());
 }
 
 inline void write_body_parts_bitmap(const libaction::Human &human,
-	std::vector<uint8_t> &output)
+	std::vector<std::uint8_t> &output)
 {
 	static_assert(static_cast<int>(libaction::BodyPart::PartIndex::end) < 32,
 		"static_cast<int>(libaction::BodyPart::PartIndex::end) < 32");
@@ -64,7 +64,7 @@ inline void write_body_parts_bitmap(const libaction::Human &human,
 }
 
 inline void write_human(const libaction::Human &human,
-	std::vector<uint8_t> &output)
+	std::vector<std::uint8_t> &output)
 {
 	write_body_parts_bitmap(human, output);
 
@@ -86,7 +86,7 @@ inline void write_human(const libaction::Human &human,
 
 template<typename HumanMap>
 inline void write_human_map(const HumanMap &human_map,
-	std::vector<uint8_t> &output)
+	std::vector<std::uint8_t> &output)
 {
 	if (human_map.size() >= max)
 		throw std::runtime_error("too many items");

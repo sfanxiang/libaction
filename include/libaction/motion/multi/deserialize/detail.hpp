@@ -35,9 +35,9 @@ namespace detail
 constexpr std::size_t max = 0x20000000;
 
 template<typename Iterator>
-inline std::vector<uint8_t> read_vector(Iterator &it, Iterator end, std::size_t size)
+inline std::vector<std::uint8_t> read_vector(Iterator &it, Iterator end, std::size_t size)
 {
-	std::vector<uint8_t> v;
+	std::vector<std::uint8_t> v;
 	for (std::size_t i = 0; i < size; i++) {
 		if (it == end)
 			throw std::runtime_error("out of bound");

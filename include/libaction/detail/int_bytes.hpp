@@ -32,7 +32,7 @@ typename std::enable_if<
 			>::type,
 			bool
 		>::value,
-	std::vector<uint8_t>
+	std::vector<std::uint8_t>
 >::type
 to_bytes(Integral value)
 {
@@ -41,7 +41,7 @@ to_bytes(Integral value)
 	uvalue = value;
 
 	std::size_t size = sizeof(value);
-	std::vector<uint8_t> result;
+	std::vector<std::uint8_t> result;
 
 	for (std::size_t i = 0; i < size; i++) {
 		result.push_back((uvalue >> ((size - i - 1) * 8)) & 0xff);
@@ -74,7 +74,7 @@ to_int(const Bytes &bytes)
 		throw std::runtime_error("bytes.size() != size");
 
 	for (std::size_t i = 0; i < size; i++) {
-		uvalue |= (static_cast<decltype(uvalue)>(static_cast<uint8_t>(bytes[i]))
+		uvalue |= (static_cast<decltype(uvalue)>(static_cast<std::uint8_t>(bytes[i]))
 			<< ((size - i - 1) * 8));
 	}
 

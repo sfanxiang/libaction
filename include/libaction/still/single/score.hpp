@@ -38,7 +38,7 @@ namespace score
 ///                         better.
 inline std::unique_ptr<std::map<std::pair<
 		libaction::BodyPart::PartIndex, libaction::BodyPart::PartIndex>,
-	uint8_t>>
+	std::uint8_t>>
 score(const libaction::Human &human1, const libaction::Human &human2)
 {
 	float x_range1, y_range1, x_range2, y_range2;
@@ -47,10 +47,10 @@ score(const libaction::Human &human1, const libaction::Human &human2)
 
 	auto scores = std::unique_ptr<std::map<std::pair<
 		libaction::BodyPart::PartIndex, libaction::BodyPart::PartIndex>,
-	uint8_t>>(
+	std::uint8_t>>(
 		new std::map<std::pair<
 			libaction::BodyPart::PartIndex, libaction::BodyPart::PartIndex>,
-		uint8_t>());
+		std::uint8_t>());
 
 	for (auto &connection: detail::score_connections()) {
 		auto human1_from_it = human1.body_parts().find(connection.first);
@@ -77,8 +77,8 @@ score(const libaction::Human &human1, const libaction::Human &human2)
 			x_range2, y_range2);
 
 		(*scores)[std::make_pair(connection.first, connection.second)]
-			= static_cast<uint8_t>(128) -
-				static_cast<uint8_t>(((a + d) / 2.0f) * 128.0f);
+			= static_cast<std::uint8_t>(128) -
+				static_cast<std::uint8_t>(((a + d) / 2.0f) * 128.0f);
 	}
 
 	return scores;

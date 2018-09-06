@@ -41,16 +41,16 @@ namespace serialize
 /// @return                 Serialized bytes.
 /// @exception              std::runtime_error
 template<typename Action>
-inline std::unique_ptr<std::vector<uint8_t>>
+inline std::unique_ptr<std::vector<std::uint8_t>>
 serialize(const Action &action, bool magic = true)
 {
-	auto data = std::unique_ptr<std::vector<uint8_t>>(
-		new std::vector<uint8_t>());
+	auto data = std::unique_ptr<std::vector<std::uint8_t>>(
+		new std::vector<std::uint8_t>());
 
 	if (magic) {
-		data->push_back(static_cast<uint8_t>('A'));
-		data->push_back(static_cast<uint8_t>('C'));
-		data->push_back(static_cast<uint8_t>('T'));
+		data->push_back(static_cast<std::uint8_t>('A'));
+		data->push_back(static_cast<std::uint8_t>('C'));
+		data->push_back(static_cast<std::uint8_t>('T'));
 		data->push_back(0);
 	}
 
