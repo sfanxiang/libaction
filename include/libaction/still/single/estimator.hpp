@@ -101,11 +101,12 @@ public:
 	/// @param[in]  channels    The number of color channels, usually 3.
 	/// @exception              std::runtime_error
 	inline Estimator(
-		const char *graph_buffer, std::size_t buffer_size, int threads,
+		const std::uint8_t *graph_buffer, std::size_t buffer_size, int threads,
 		std::size_t height, std::size_t width, std::size_t channels) :
 	model_height(height), model_width(width), model_channels(channels),
 	model(tflite::FlatBufferModel::BuildFromBuffer(
-		graph_buffer, buffer_size, &error_reporter))
+		static_cast<const char *>(static_cast<const void *>(graph_buffer)),
+			buffer_size, &error_reporter))
 	{
 		initialize(threads);
 	}
