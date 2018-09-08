@@ -974,7 +974,7 @@ private:
 			}
 		}
 
-		return ret;
+		return std::move(ret);
 	}
 
 	/// Get the processed human pose to return to the user.
