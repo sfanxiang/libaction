@@ -67,11 +67,14 @@ inline std::unique_ptr<libaction::Human> anti_crossing(
 	// left body part / right body part
 
 	for (auto current: {
-		std::tuple<id, id>
-		{ id::eye_l, id::eye_r }, { id::ear_l, id::ear_r },
-		{ id::shoulder_l, id::shoulder_r }, { id::elbow_l, id::elbow_r },
-		{ id::wrist_l, id::wrist_r }, { id::hip_l, id::hip_r },
-		{ id::knee_l, id::knee_r }, { id::ankle_l, id::ankle_r } })
+		std::tuple<id, id>{ id::eye_l, id::eye_r },
+		std::tuple<id, id>{ id::ear_l, id::ear_r },
+		std::tuple<id, id>{ id::shoulder_l, id::shoulder_r },
+		std::tuple<id, id>{ id::elbow_l, id::elbow_r },
+		std::tuple<id, id>{ id::wrist_l, id::wrist_r },
+		std::tuple<id, id>{ id::hip_l, id::hip_r },
+		std::tuple<id, id>{ id::knee_l, id::knee_r },
+		std::tuple<id, id>{ id::ankle_l, id::ankle_r } })
 	{
 		bool left_cross = false, right_cross = false;
 
