@@ -19,8 +19,8 @@ build:
   - mkdir -p /usr/local/include
   - mkdir -p /usr/local/lib
   - cp -R tensorflow/tensorflow /usr/local/include
-  - cp -R tensorflow/tensorflow/contrib/lite/downloads/flatbuffers/include/* /usr/local/include/
-  - cp $(find tensorflow/tensorflow/contrib/lite/gen/lib -name "libtensorflow-lite.a") /usr/local/lib
+  - cp -R tensorflow/tensorflow/contrib/lite/tools/make/downloads/flatbuffers/include/* /usr/local/include/
+  - cp $(find tensorflow/tensorflow/contrib/lite/tools/make/gen -name "libtensorflow-lite.a") /usr/local/lib
   # build libaction
   - meson build --buildtype release --werror --warnlevel 3
   - ninja -C build
