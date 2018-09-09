@@ -11,8 +11,7 @@ build:
   # fetch stuff
   - apt-get update -qq && apt-get install -y -qq doxygen graphviz libboost-all-dev meson unzip
   # download the latest release of TensorFlow
-  # - curl -s -L $(curl -s -L https://api.github.com/repos/tensorflow/tensorflow/releases/latest | python -c "import sys, json; print(json.load(sys.stdin)['tarball_url'])") | tar -z -x && mv tensorflow* tensorflow
-  - curl -s -L https://github.com/tensorflow/tensorflow/archive/r1.11.tar.gz | tar -z -x && mv tensorflow* tensorflow
+  - curl -s -L $(curl -s -L https://api.github.com/repos/tensorflow/tensorflow/releases/latest | python -c "import sys, json; print(json.load(sys.stdin)['tarball_url'])") | tar -z -x && mv tensorflow* tensorflow
   # build tensorflow-lite
   - cd tensorflow && tensorflow/contrib/lite/tools/make/download_dependencies.sh && cd ..
   - cd tensorflow && make -s -j $(nproc) -f tensorflow/contrib/lite/tools/make/Makefile SHELL=bash && cd ..
