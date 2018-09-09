@@ -13,8 +13,8 @@ build:
   # download the latest release of TensorFlow
   - curl -s -L $(curl -s -L https://api.github.com/repos/tensorflow/tensorflow/releases/latest | python -c "import sys, json; print(json.load(sys.stdin)['tarball_url'])") | tar -z -x && mv tensorflow* tensorflow
   # build tensorflow-lite
-  - cd tensorflow && tensorflow/contrib/lite/download_dependencies.sh && cd ..
-  - cd tensorflow && make -s -j $(nproc) -f tensorflow/contrib/lite/Makefile SHELL=bash && cd ..
+  - cd tensorflow && tensorflow/contrib/lite/tools/make/download_dependencies.sh && cd ..
+  - cd tensorflow && make -s -j $(nproc) -f tensorflow/contrib/lite/tools/make/Makefile SHELL=bash && cd ..
   # install tensorflow-lite
   - mkdir -p /usr/local/include
   - mkdir -p /usr/local/lib
