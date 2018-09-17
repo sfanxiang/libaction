@@ -9,6 +9,7 @@
 #define LIBACTION__MOTION__SINGLE__MISSED_MOVES_HPP_
 
 #include "../../body_part.hpp"
+#include "missed_moves/detail.hpp"
 
 #include <algorithm>
 #include <limits>
@@ -27,13 +28,15 @@ namespace single
 namespace missed_moves
 {
 
-/// Find missed moves in a consecutive list of scores.
+/// Find missed moves (moves with low scores) in a consecutive list of scores.
 
 /// @param[in]  score_list  A consecutive list of scores of the form List<Map<
 ///                         std::pair<libaction::BodyPart::PartIndex,
 ///                         libaction::BodyPart::PartIndex>, Integer>>.
 /// @param[in]  threshold   The threshold lower than which is a potentially
 ///                         missed move.
+/// @param[in]  max_length  The maximum number of frames for a missed move.
+///                         Results exceeding this value will be divided.
 /// @return                 A list of missed moves. The value of the map
 ///                         (std::pair<std::uint32_t, std::uint8_t>) indicates
 ///                         the number of frames for a missed move and the mean
@@ -46,10 +49,13 @@ template<typename ScoreList>
 std::unique_ptr<std::list<std::map<std::pair<
 		libaction::BodyPart::PartIndex, libaction::BodyPart::PartIndex>,
 	std::pair<std::uint32_t, std::uint8_t>>>>
-missed_moves(const ScoreList &score_list, std::uint8_t threshold)
+missed_moves(const ScoreList &score_list, std::uint8_t threshold,
+	std::uint32_t max_length)
 {
 	if (score_list.size() > std::numeric_limits<std::uint32_t>::max() - 4)
 		throw std::runtime_error("score list too long");
+	if (max_length == 0)
+		throw std::runtime_error("max_length == 0");
 
 	std::map<std::tuple<std::uint32_t, std::uint32_t, std::uint64_t>,
 		std::pair<libaction::BodyPart::PartIndex, libaction::BodyPart::PartIndex>
@@ -69,11 +75,7 @@ missed_moves(const ScoreList &score_list, std::uint8_t threshold)
 						(i - std::get<1>(it->second) + 1)) {
 					std::get<3>(it->second) += 128;
 				} else {
-					record[std::make_tuple(std::get<0>(it->second),
-							std::get<1>(it->second),
-							std::get<2>(it->second))]
-						= it->first;
-					it = track.erase(it);
+					it = detail::track_to_record(track, record, it);
 					continue;
 				}
 			}
@@ -98,11 +100,7 @@ missed_moves(const ScoreList &score_list, std::uint8_t threshold)
 							(i - std::get<1>(find->second) + 1)) {
 						std::get<3>(find->second) += part_score;
 					} else {
-						record[std::make_tuple(std::get<0>(find->second),
-								std::get<1>(find->second),
-								std::get<2>(find->second))]
-							= find->first;
-						track.erase(find);
+						detail::track_to_record(track, record, find);
 					}
 				}
 			} else {
@@ -111,6 +109,15 @@ missed_moves(const ScoreList &score_list, std::uint8_t threshold)
 				}
 			}
 		}
+
+		for (auto it = track.begin(); it != track.end(); ) {
+			if (i - std::get<1>(it->second) + 1 >= max_length) {
+				it = detail::track_to_record(track, record, it);
+				continue;
+			}
+			++it;
+		}
+
 		i++;
 	}
 	for (auto &track_item: track) {
@@ -125,17 +132,20 @@ missed_moves(const ScoreList &score_list, std::uint8_t threshold)
 		std::pair<std::uint32_t, std::uint8_t>>>;
 	auto moves = std::unique_ptr<return_type>(new return_type());
 
+	auto record_it = record.begin();
 	for (std::uint32_t i = 0; i < score_list.size(); i++) {
 		moves->emplace_back();
-		while (!record.empty() && std::get<0>(record.begin()->first) == i) {
+
+		for (; record_it != record.end() && std::get<0>(record_it->first) == i;
+				++record_it) {
 			std::uint32_t length =
-				std::get<0>(record.begin()->first) - std::get<1>(record.begin()->first) + 1;
-			std::uint64_t score = std::get<2>(record.begin()->first) / length;
+				std::get<0>(record_it->first) - std::get<1>(record_it->first) + 1;
+			std::uint64_t score = std::get<2>(record_it->first) / length;
 			std::uint8_t score_mean = 128;
 			if (score < 128)
 				score_mean = score;
 
-			moves->rbegin()->insert(std::make_pair(record.begin()->second,
+			moves->rbegin()->insert(std::make_pair(record_it->second,
 				std::make_pair(length, score_mean)));
 		}
 	}
