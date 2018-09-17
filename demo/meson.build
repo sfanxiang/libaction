@@ -5,6 +5,11 @@
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
 
+executable('action-missed',
+           sources : ['action_missed.cpp'],
+           include_directories : include_directories('../include'),
+           dependencies : dependencies)
+
 executable('action-motion',
            sources : ['action_motion.cpp'],
            include_directories : include_directories('../include'),
