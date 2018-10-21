@@ -89,8 +89,8 @@ inline float angle_score(float x1, float y1, float x_range1, float y_range1,
 		return 0.0f;
 	}
 
-	return angle_diff(x1 * 4.0f / x_range1, y1 / y_range1,
-		x2 * 4.0f / x_range2, y2 / y_range2) / (std::acos(-1.0f) /* pi */ );
+	return std::min(1.0f, 2.0f * angle_diff(x1 * 4.0f / x_range1, y1 / y_range1,
+		x2 * 4.0f / x_range2, y2 / y_range2) / (std::acos(-1.0f) /* pi */ ));
 }
 
 inline float angle_score(const libaction::BodyPart &connection1_from,
@@ -129,7 +129,7 @@ inline float distance_score(float x1, float y1, float x_range1, float y_range1,
 	auto sum = d1 + d2;
 
 	if (sum > 0.0f)
-		return diff / sum;
+		return std::min(1.0f, 2.0f * diff / sum);
 	else
 		return 0.0f;
 }
